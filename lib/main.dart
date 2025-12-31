@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/pages/first_page.dart';
+import 'package:my_app/pages/profile.dart';
+import 'package:my_app/pages/second_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -75,8 +78,51 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text("Walking in the Woods"),
+        backgroundColor: Colors.blue,
+
+        actions: [
+          IconButton(
+            onPressed: () {
+              //open profile
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (context) => ProfilePage()));
+            },
+            icon: Icon(Icons.person),
+          ),
+        ],
       ),
+      drawer: Drawer(
+        child: Container(
+          color: Colors.blue,
+          child: ListView(children: [
+            DrawerHeader(
+              child: Center(child: Text('Menu')),
+            ),
+            ListTile(
+                leading: Icon(Icons.home),
+                title: Text(
+                  'Page 1',
+                  style: TextStyle(fontSize: 20),
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => FirstPage()));
+                }),
+            ListTile(
+                leading: Icon(Icons.home),
+                title: Text(
+                  'Page 2',
+                  style: TextStyle(fontSize: 20),
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => SecondPage()));
+                })
+          ]),
+        ),
+      ),
+
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
