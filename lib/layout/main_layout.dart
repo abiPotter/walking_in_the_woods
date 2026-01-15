@@ -3,6 +3,8 @@ import 'package:my_app/pages/first_page.dart';
 import 'package:my_app/pages/profile.dart';
 import 'package:my_app/pages/second_page.dart';
 
+import '../main.dart';
+
 class MainLayout extends StatelessWidget {
   final Widget child;
   const MainLayout({super.key, required this.child});
@@ -34,6 +36,16 @@ class MainLayout extends StatelessWidget {
             DrawerHeader(
               child: Center(child: Text('Menu')),
             ),
+            ListTile(
+                leading: Icon(Icons.home),
+                title: Text(
+                  'Home',
+                  style: TextStyle(fontSize: 20),
+                ),
+                onTap: () {
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (context) => MyApp()));
+                }),
             ListTile(
                 leading: Icon(Icons.home),
                 title: Text(

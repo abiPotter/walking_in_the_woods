@@ -3,6 +3,10 @@ import 'package:my_app/pages/first_page.dart';
 import 'package:my_app/pages/profile.dart';
 import 'package:my_app/pages/second_page.dart';
 
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -27,6 +31,7 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
+        useMaterial3: false,
         primarySwatch: Colors.green,
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
@@ -75,89 +80,83 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text("Walking in the Woods"),
-        backgroundColor: Colors.blue,
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text("Roam and Report"),
+          backgroundColor: Colors.blue,
 
-        actions: [
-          IconButton(
-            onPressed: () {
-              //open profile
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (context) => ProfilePage()));
-            },
-            icon: Icon(Icons.person),
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: Container(
-          color: Colors.blue,
-          child: ListView(children: [
-            DrawerHeader(
-              child: Center(child: Text('Menu')),
-            ),
-            ListTile(
-                leading: Icon(Icons.home),
-                title: Text(
-                  'Page 1',
-                  style: TextStyle(fontSize: 20),
-                ),
-                onTap: () {
-                  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => FirstPage()));
-                }),
-            ListTile(
-                leading: Icon(Icons.home),
-                title: Text(
-                  'Page 2',
-                  style: TextStyle(fontSize: 20),
-                ),
-                onTap: () {
-                  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => SecondPage()));
-                })
-          ]),
-        ),
-      ),
-
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          actions: [
+            IconButton(
+              onPressed: () {
+                //open profile
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => ProfilePage()));
+              },
+              icon: Icon(Icons.person),
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+        drawer: Drawer(
+          child: Container(
+            color: Colors.blue,
+            child: ListView(children: [
+              DrawerHeader(
+                child: Center(child: Text('Menu')),
+              ),
+              ListTile(
+                  leading: Icon(Icons.home),
+                  title: Text(
+                    'Page 1',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => FirstPage()));
+                  }),
+              ListTile(
+                  leading: Icon(Icons.home),
+                  title: Text(
+                    'Page 2',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => SecondPage()));
+                  })
+            ]),
+          ),
+        ),
+        body: Container(
+          width: 450,
+          height: 650,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.blueAccent),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: LatLng(50.7371, -3.5318),
+              initialZoom: 15,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=pOhyO2fVFGnndUVzQFX8',
+                userAgentPackageName: 'com.undergrad_proj.walking_in_the_woods',
+              ),
+              RichAttributionWidget(
+                attributions: [
+                  TextSourceAttribution(
+                    '© MapTiler © OpenStreetMap contributors',
+                    onTap: () => launchUrl(
+                      Uri.parse('https://www.maptiler.com/copyright/'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ));
   }
 }
