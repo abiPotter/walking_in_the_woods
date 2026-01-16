@@ -3,7 +3,7 @@ import 'package:my_app/pages/first_page.dart';
 import 'package:my_app/pages/profile.dart';
 import 'package:my_app/pages/second_page.dart';
 
-import '../main.dart';
+import '../pages/home_page.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
@@ -12,64 +12,66 @@ class MainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text("Walking in the Woods"),
-        backgroundColor: Colors.blue,
+      appBar: _buildAppBar(context),
+      drawer: _buildDrawer(context),
+      body: child,
+    );
+  }
 
-        actions: [
-          IconButton(
-            onPressed: () {
-              //open profile
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (context) => ProfilePage()));
-            },
-            icon: Icon(Icons.person),
-          ),
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: Column(
+        children: [
+          Text('Roam and Report', style: TextStyle(fontSize: 24)),
+          Text("Roam the Trails, Report the Troubles",
+              style: TextStyle(fontSize: 14)),
         ],
       ),
-      drawer: Drawer(
-        child: Container(
-          color: Colors.blue,
-          child: ListView(children: [
-            DrawerHeader(
-              child: Center(child: Text('Menu')),
-            ),
-            ListTile(
-                leading: Icon(Icons.home),
-                title: Text(
-                  'Home',
-                  style: TextStyle(fontSize: 20),
-                ),
-                onTap: () {
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(builder: (context) => MyApp()));
-                }),
-            ListTile(
-                leading: Icon(Icons.home),
-                title: Text(
-                  'Page 1',
-                  style: TextStyle(fontSize: 20),
-                ),
-                onTap: () {
-                  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => FirstPage()));
-                }),
-            ListTile(
-                leading: Icon(Icons.home),
-                title: Text(
-                  'Page 2',
-                  style: TextStyle(fontSize: 20),
-                ),
-                onTap: () {
-                  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => SecondPage()));
-                })
-          ]),
+      backgroundColor: Colors.blue,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.person),
+          onPressed: () {
+            //open profile
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => ProfilePage()));
+          },
         ),
+      ],
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: Container(
+        color: Colors.blue,
+        child: ListView(children: [
+          DrawerHeader(
+            child: Center(child: Text('Menu')),
+          ),
+          _drawerItem(context, title: 'Home', page: HomePage()),
+          _drawerItem(context, title: 'Page 1', page: FirstPage()),
+          _drawerItem(context, title: 'Page 2', page: SecondPage())
+        ]),
       ),
-      body: child,
+    );
+  }
+
+  Widget _drawerItem(
+    BuildContext context, {
+    required String title,
+    required Widget page,
+  }) {
+    return ListTile(
+      leading: const Icon(Icons.home),
+      title: Text(title, style: const TextStyle(fontSize: 20)),
+      onTap: () {
+        Navigator.pop(context); //close drawer
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => page),
+        );
+      },
     );
   }
 }
