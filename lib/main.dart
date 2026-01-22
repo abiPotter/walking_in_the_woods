@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Roam and Report',
       theme: ThemeData(
         useMaterial3: false,
-        primarySwatch: Colors.green,
+        primarySwatch: Colors.blue,
       ),
       home: const HomePage(),
     );
