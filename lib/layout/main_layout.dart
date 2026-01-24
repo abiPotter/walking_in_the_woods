@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/pages/first_page.dart';
+import 'package:my_app/helpers/map_ui_state.dart';
+import 'package:my_app/pages/report_page.dart';
 import 'package:my_app/pages/profile.dart';
 import 'package:my_app/pages/second_page.dart';
+import 'package:provider/provider.dart';
 
 import '../pages/home_page.dart';
 
@@ -50,7 +52,7 @@ class MainLayout extends StatelessWidget {
             child: Center(child: Text('Menu')),
           ),
           _drawerItem(context, title: 'Home', page: HomePage()),
-          _drawerItem(context, title: 'Page 1', page: FirstPage()),
+          _drawerItem(context, title: 'Page 1', page: ReportPage()),
           _drawerItem(context, title: 'Page 2', page: SecondPage())
         ]),
       ),

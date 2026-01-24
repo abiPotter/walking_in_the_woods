@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/pages/home_page.dart';
+import 'package:provider/provider.dart';
+
+import 'helpers/map_ui_state.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(ChangeNotifierProvider(
+      create: (_) => MapUiState(), child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
