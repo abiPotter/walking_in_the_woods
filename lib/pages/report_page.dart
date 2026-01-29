@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 
 import '../helpers/map_container.dart';
@@ -45,7 +45,10 @@ class _ReportPageState extends State<ReportPage> {
   final TextEditingController _dateController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
   bool isSaving = false;
+  bool hasSaveBeenAttempted = false;
   String? _locationError;
+
+  final supabase = Supabase.instance.client;
 
   @override
   void initState() {
@@ -62,6 +65,9 @@ class _ReportPageState extends State<ReportPage> {
             child: Center(
                 child: Form(
                     key: _formKey,
+                    autovalidateMode: hasSaveBeenAttempted
+                        ? AutovalidateMode.always
+                        : AutovalidateMode.disabled,
                     child: ListView(children: [
                       Text(
                         "Location:",
@@ -160,7 +166,9 @@ class _ReportPageState extends State<ReportPage> {
                             setState(() {
                               shortDescription = desc;
                             });
-                            _formKey.currentState!.validate();
+                            if (hasSaveBeenAttempted) {
+                              _formKey.currentState!.validate();
+                            }
                           },
                           validator: (val) {
                             if (val == null || val.isEmpty) {
@@ -269,7 +277,9 @@ class _ReportPageState extends State<ReportPage> {
             "${datePicked.day}-${datePicked.month}-${datePicked.year}";
       });
     }
-    _formKey.currentState!.validate();
+    if (hasSaveBeenAttempted) {
+      _formKey.currentState!.validate();
+    }
   }
 
   Future<void> _pickImage() async {
@@ -289,6 +299,7 @@ class _ReportPageState extends State<ReportPage> {
   Future<void> saveReport() async {
     setState(() {
       isSaving = true;
+      hasSaveBeenAttempted = true;
     });
 
     if (selectedLocation == null || !_formKey.currentState!.validate()) {
@@ -297,7 +308,6 @@ class _ReportPageState extends State<ReportPage> {
         isSaving = false;
         _locationError = "Please select a location";
       });
-      _formKey.currentState!.validate();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please complete all highlighted fields')),
@@ -305,17 +315,22 @@ class _ReportPageState extends State<ReportPage> {
       return; // stop saving
     }
 
-    //save logic
-    final report = <String, dynamic>{
-      "latitute": selectedLocation?.latitude,
-      "longitude": selectedLocation?.longitude,
-      "date": Timestamp.fromDate(reportedDate!),
-      "description": shortDescription,
-      "long description": longDescription,
-      "photos": _images
-    };
-
     try {
+      List<String> imageUrls = [];
+      if (_images != null && _images!.isNotEmpty) {
+        imageUrls = await uploadImages(_images!);
+      }
+
+      //save logic
+      final report = <String, dynamic>{
+        "latitute": selectedLocation?.latitude,
+        "longitude": selectedLocation?.longitude,
+        "date": Timestamp.fromDate(reportedDate!),
+        "description": shortDescription,
+        "long description": longDescription,
+        "photos": imageUrls
+      };
+
       final reportRef = await db.collection("reports").add(report);
       debugPrint("report added: ${reportRef.id}");
 
@@ -347,10 +362,31 @@ class _ReportPageState extends State<ReportPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error saving report: $e')),
       );
+      debugPrint("error: $e");
     } finally {
       setState(() {
         isSaving = false;
       });
     }
+  }
+
+  Future<List<String>> uploadImages(List<XFile> images) async {
+    List<String> downloadUrls = [];
+
+    for (var image in images) {
+      File file = File(image.path);
+      String fileName = "${DateTime.now().toString()}_${image.name}";
+
+      // Upload to 'reports' bucket
+      await supabase.storage
+          .from('reports')
+          .uploadBinary('images/$fileName', await file.readAsBytes());
+
+      final imageUrl =
+          supabase.storage.from('reports').getPublicUrl('images/$fileName');
+
+      downloadUrls.add(imageUrl);
+    }
+    return downloadUrls;
   }
 }
