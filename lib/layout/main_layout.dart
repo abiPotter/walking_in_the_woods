@@ -52,7 +52,7 @@ class MainLayout extends StatelessWidget {
             child: Center(child: Text('Menu')),
           ),
           _drawerItem(context, title: 'Home', page: HomePage()),
-          _drawerItem(context, title: 'Page 1', page: ReportPage()),
+          _drawerItem(context, title: 'Report', page: ReportPage()),
           _drawerItem(context, title: 'Page 2', page: SecondPage())
         ]),
       ),

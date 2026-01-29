@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "600223632016",
+    "project_id": "walking-in-the-woods",
+    "storage_bucket": "walking-in-the-woods.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:600223632016:android:d06ba41b03a39f1faba615",
+        "android_client_info": {
+          "package_name": "com.undergrad_proj.walking_in_the_woods"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkvK0RrVZRZbOx0fu1fatfpwKYjNUdEyk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

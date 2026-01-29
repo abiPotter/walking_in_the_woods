@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:my_app/helpers/map_ui_state.dart';
@@ -13,17 +14,22 @@ import 'package:http/http.dart' as http;
 import '../services/location_service.dart';
 
 class MapContainer extends StatefulWidget {
-  const MapContainer({super.key});
+  final void Function(LatLng)? onLocationSelected;
+  final LatLng? initialLocation;
+
+  const MapContainer(
+      {super.key, this.onLocationSelected, this.initialLocation});
 
   @override
   State<MapContainer> createState() => _MapContainerState();
 }
 
 class _MapContainerState extends State<MapContainer> {
+  final String? mapApiKey = dotenv.env['MAPTILER_API_KEY'];
+
   LatLng? _position;
   bool _usingDefaultLocation = false;
   bool _mapLoading = true;
-
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -33,13 +39,31 @@ class _MapContainerState extends State<MapContainer> {
       {}; //local cache for faster suggestions
   final GlobalKey _suggestionsKey = GlobalKey();
 
+  final List<Marker> _markers = [];
+
   @override
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadLocation();
-    });
+    if (widget.initialLocation != null) {
+      _markers.add(Marker(
+        width: 150,
+        height: 150,
+        point: widget.initialLocation!,
+        child: Icon(
+          Icons.location_on,
+          color: Colors.red,
+          size: 35,
+        ),
+      ));
+      setState(() {
+        _mapLoading = false;
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _loadLocation();
+      });
+    }
   }
 
   @override
@@ -60,13 +84,34 @@ class _MapContainerState extends State<MapContainer> {
             FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: _position ?? const LatLng(10, 10),
-                initialZoom: 15,
-              ),
+                  initialCenter: widget.initialLocation ??
+                      _position ??
+                      const LatLng(10, 10),
+                  initialZoom: 15,
+                  onTap: (tapPosition, point) {
+                    setState(() {
+                      _markers.clear();
+                      _markers.add(
+                        Marker(
+                          width: 150,
+                          height: 150,
+                          point: point,
+                          child: Icon(
+                            Icons.location_on,
+                            color: Colors.red,
+                            size: 35,
+                          ),
+                        ),
+                      );
+                    });
+                    if (widget.onLocationSelected != null) {
+                      widget.onLocationSelected!(point);
+                    }
+                  }),
               children: [
                 TileLayer(
                   urlTemplate:
-                      'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=pOhyO2fVFGnndUVzQFX8',
+                      'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=$mapApiKey',
                   userAgentPackageName:
                       'com.undergrad_proj.walking_in_the_woods',
                 ),
@@ -79,6 +124,9 @@ class _MapContainerState extends State<MapContainer> {
                       ),
                     ),
                   ],
+                ),
+                MarkerLayer(
+                  markers: _markers,
                 ),
               ],
             ),

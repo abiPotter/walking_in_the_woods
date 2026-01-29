@@ -19,7 +19,10 @@ class HomePage extends StatelessWidget {
         child: Column(children: [
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.75,
-            child: MapContainer(),
+            child: MapContainer(onLocationSelected: (latLng) {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => ReportPage(initialLocation: latLng)));
+            }),
           ),
           if (!keyboardOpen)
             Padding(

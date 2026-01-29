@@ -1,23 +1,33 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import 'dart:io';
 
 import '../helpers/map_container.dart';
 import '../layout/main_layout.dart';
+import 'home_page.dart';
 
 class ReportPage extends StatefulWidget {
-  const ReportPage({super.key});
+  final LatLng? initialLocation;
+  const ReportPage({super.key, this.initialLocation});
 
   @override
   State<ReportPage> createState() => _ReportPageState();
 }
 
 class _ReportPageState extends State<ReportPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  LatLng? selectedLocation;
   DateTime? reportedDate;
   String? shortDescription;
+  String longDescription = "";
   List<XFile>? _images = [];
+
+  final db = FirebaseFirestore.instance;
 
   List<String> possibleProblems = [
     "Blocked/overgrown footpath",
@@ -34,6 +44,14 @@ class _ReportPageState extends State<ReportPage> {
 
   final TextEditingController _dateController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
+  bool isSaving = false;
+  String? _locationError;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedLocation = widget.initialLocation;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,138 +60,198 @@ class _ReportPageState extends State<ReportPage> {
             padding: const EdgeInsets.all(16),
             color: Colors.white,
             child: Center(
-                child: ListView(children: [
-              Text(
-                "Location:",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18, // optional, adjust size
-                ),
-              ),
-              Text("Confirm this is the correct location for the problem"),
-              SizedBox(height: 8),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: MapContainer(),
-              ),
-              SizedBox(height: 12),
-              Text(
-                "Date Found:",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18, // optional, adjust size
-                ),
-              ),
-              TextFormField(
-                controller: _dateController,
-                readOnly: true,
-                decoration: const InputDecoration(
-                    hintText: '  Select date',
-                    suffixIcon: Icon(Icons.calendar_today)),
-                onTap: () => pickDate(context),
-              ),
-              SizedBox(height: 12),
-              Text(
-                "Description:",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18, // optional, adjust size
-                ),
-              ),
-              SizedBox(height: 8),
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width - 32),
-                child: DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  initialValue: shortDescription,
-                  decoration: const InputDecoration(
-                    labelText: 'Identify the problem',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: possibleProblems.map((item) {
-                    return DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(item),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      shortDescription = value;
-                    });
-                  },
-                ),
-              ),
-              SizedBox(height: 8),
-              Text("Any additional information:",
-                  style: TextStyle(
-                    fontSize: 16, // optional, adjust size
-                  )),
-              Text(
-                  "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected"),
-              TextFormField(
-                maxLines: null, // grows vertically
-                minLines: 3,
-                keyboardType: TextInputType.multiline,
-                decoration: const InputDecoration(
-                  hintText: 'Enter text',
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 12),
-              Text(
-                "Photos:",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18, // optional, adjust size
-                ),
-              ),
-              Text(
-                  "This could include: \n - Close up of the problem \n - Distance picture for context"),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.photo),
-                    iconSize: 60,
-                    onPressed: _pickImage,
-                  ),
-                  _images != null && _images!.isNotEmpty
-                      ? Expanded(
-                          child: SizedBox(
-                            height: 150,
-                            child: GridView.builder(
-                              itemCount: _images?.length ?? 0,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 4,
-                                mainAxisSpacing: 4,
-                              ),
-                              itemBuilder: (context, index) {
-                                return Image.file(
-                                  File(_images![index].path),
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            ),
+                child: Form(
+                    key: _formKey,
+                    child: ListView(children: [
+                      Text(
+                        "Location:",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18, // optional, adjust size
+                        ),
+                      ),
+                      Text(selectedLocation != null
+                          ? "Confirm this is the correct location for the problem:"
+                          : "Please select the location for the problem on the map:"),
+                      SizedBox(height: 8),
+                      Container(
+                        height: MediaQuery.of(context).size.height * 0.4,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _locationError != null
+                                ? Colors.red
+                                : Colors.grey,
+                            width: 2,
                           ),
-                        )
-                      : Text("No image selected"),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 30),
-                child: Center(
-                  child: FloatingActionButton.extended(
-                    onPressed: saveReport,
-                    icon: const Icon(Icons.save),
-                    label: const Text('Save'),
-                  ),
-                ),
-              ),
-            ]))));
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: MapContainer(
+                            initialLocation: selectedLocation,
+                            onLocationSelected: (latLng) {
+                              setState(() {
+                                selectedLocation = latLng;
+                                _locationError = null;
+                              });
+                            }),
+                      ),
+                      if (selectedLocation != null)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            'Selected Location: ${selectedLocation!.latitude}, ${selectedLocation!.longitude}',
+                          ),
+                        ),
+                      if (_locationError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0, left: 8),
+                          child: Text(
+                            _locationError!,
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      SizedBox(height: 12),
+                      Text(
+                        "Date Found:",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18, // optional, adjust size
+                        ),
+                      ),
+                      TextFormField(
+                        controller: _dateController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                            hintText: '  Select date',
+                            suffixIcon: Icon(Icons.calendar_today)),
+                        onTap: () => pickDate(context),
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'Please select a date';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        "Description:",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18, // optional, adjust size
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width - 32),
+                        child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          initialValue: shortDescription,
+                          decoration: const InputDecoration(
+                            labelText: 'Identify the problem',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: possibleProblems.map((item) {
+                            return DropdownMenuItem<String>(
+                              value: item,
+                              child: Text(item),
+                            );
+                          }).toList(),
+                          onChanged: (desc) {
+                            setState(() {
+                              shortDescription = desc;
+                            });
+                            _formKey.currentState!.validate();
+                          },
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return 'Please select a problem';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text("Any additional information:",
+                          style: TextStyle(
+                            fontSize: 16, // optional, adjust size
+                          )),
+                      Text(
+                          "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected"),
+                      TextFormField(
+                        maxLines: null, // grows vertically
+                        minLines: 3,
+                        keyboardType: TextInputType.multiline,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter text',
+                          alignLabelWithHint: true,
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (longDesc) {
+                          longDescription = longDesc;
+                        },
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        "Photos:",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18, // optional, adjust size
+                        ),
+                      ),
+                      Text(
+                          "This could include: \n - Close up of the problem \n - Distance picture for context"),
+                      SizedBox(height: 10),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.photo),
+                            iconSize: 60,
+                            onPressed: _pickImage,
+                          ),
+                          _images != null && _images!.isNotEmpty
+                              ? Expanded(
+                                  child: SizedBox(
+                                    height: 150,
+                                    child: GridView.builder(
+                                      itemCount: _images?.length ?? 0,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        crossAxisSpacing: 4,
+                                        mainAxisSpacing: 4,
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        return Image.file(
+                                          File(_images![index].path),
+                                          fit: BoxFit.cover,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                )
+                              : Text("No image selected"),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 30),
+                        child: Center(
+                          child: FloatingActionButton.extended(
+                            onPressed: isSaving ? null : saveReport,
+                            icon: isSaving
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.save),
+                            label: Text(isSaving ? 'Saving...' : 'Save'),
+                          ),
+                        ),
+                      ),
+                    ])))));
   }
 
   Future<void> pickDate(BuildContext context) async {
@@ -191,23 +269,88 @@ class _ReportPageState extends State<ReportPage> {
             "${datePicked.day}-${datePicked.month}-${datePicked.year}";
       });
     }
+    _formKey.currentState!.validate();
   }
 
   Future<void> _pickImage() async {
-    final List<XFile>? selectedImages = await _imagePicker.pickMultiImage(
+    final List<XFile> selectedImages = await _imagePicker.pickMultiImage(
       maxWidth: 800,
       maxHeight: 800,
       imageQuality: 80,
     );
 
-    if (selectedImages != null && selectedImages.isNotEmpty) {
+    if (selectedImages.isNotEmpty) {
       setState(() {
         _images = selectedImages;
       });
     }
   }
 
-  void saveReport() {
+  Future<void> saveReport() async {
+    setState(() {
+      isSaving = true;
+    });
+
+    if (selectedLocation == null || !_formKey.currentState!.validate()) {
+      // Invalid fields will automatically show red borders & error messages
+      setState(() {
+        isSaving = false;
+        _locationError = "Please select a location";
+      });
+      _formKey.currentState!.validate();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please complete all highlighted fields')),
+      );
+      return; // stop saving
+    }
+
     //save logic
+    final report = <String, dynamic>{
+      "latitute": selectedLocation?.latitude,
+      "longitude": selectedLocation?.longitude,
+      "date": Timestamp.fromDate(reportedDate!),
+      "description": shortDescription,
+      "long description": longDescription,
+      "photos": _images
+    };
+
+    try {
+      final reportRef = await db.collection("reports").add(report);
+      debugPrint("report added: ${reportRef.id}");
+
+      if (!mounted) return;
+
+      await showDialog<bool>(
+        context: context,
+        barrierDismissible: false, // user must choose
+        builder: (ctx) => AlertDialog(
+          title: const Text('Report Saved Successsfully'),
+          content: const Text(
+              'Do you want to return to the Home page or stay on this page?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => HomePage())), // return home
+              child: const Text('Return Home'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ReportPage())), // stay
+              child: const Text('Stay'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Handle errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving report: $e')),
+      );
+    } finally {
+      setState(() {
+        isSaving = false;
+      });
+    }
   }
 }
