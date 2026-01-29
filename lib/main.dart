@@ -12,12 +12,15 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  final String? supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final String? supabaseKey = dotenv.env['SUPABASE_ANONKEY'];
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await Supabase.initialize(
-    url: 'https://lcqiwqwygtiiachcolzy.supabase.co',
-    anonKey: 'sb_publishable_Qm2mC6tHL4T_4edfWsIeHQ_WW7H5rLj',
+    url: supabaseUrl!,
+    anonKey: supabaseKey!,
   );
 
   runApp(ChangeNotifierProvider(
