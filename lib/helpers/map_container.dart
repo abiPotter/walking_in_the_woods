@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:http/http.dart' as http;
 
+import '../enums/map_style.dart';
 import '../services/location_service.dart';
 
 class MapContainer extends StatefulWidget {
@@ -26,6 +27,8 @@ class MapContainer extends StatefulWidget {
 
 class _MapContainerState extends State<MapContainer> {
   final String? mapApiKey = dotenv.env['MAPTILER_API_KEY'];
+  late final Map<MapStyle, String> mapStyles;
+  MapStyle currentStyle = MapStyle.OpenStreetMap;
 
   LatLng? _position;
   bool _usingDefaultLocation = false;
@@ -44,6 +47,25 @@ class _MapContainerState extends State<MapContainer> {
   @override
   void initState() {
     super.initState();
+
+    mapStyles = {
+      MapStyle.Landscape:
+          'https://api.maptiler.com/maps/landscape-v4/{z}/{x}/{y}.png?key=$mapApiKey',
+      MapStyle.OpenStreetMap:
+          'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=$mapApiKey',
+      MapStyle.Outdoor:
+          'https://api.maptiler.com/maps/outdoor-v4/{z}/{x}/{y}.png?key=$mapApiKey',
+      MapStyle.Satellite:
+          'https://api.maptiler.com/maps/hybrid-v4/{z}/{x}/{y}.jpg?key=$mapApiKey',
+      MapStyle.Streets:
+          'https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=$mapApiKey',
+      MapStyle.Toner:
+          'https://api.maptiler.com/maps/toner-v2/{z}/{x}/{y}.png?key=$mapApiKey',
+      MapStyle.Topo:
+          'https://api.maptiler.com/maps/topo-v4/256/{z}/{x}/{y}.png?key=$mapApiKey',
+      MapStyle.UK:
+          'https://api.maptiler.com/maps/uk-openzoomstack-road/{z}/{x}/{y}.png?key=$mapApiKey'
+    };
 
     if (widget.initialLocation != null) {
       _markers.add(Marker(
@@ -110,8 +132,7 @@ class _MapContainerState extends State<MapContainer> {
                   }),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=$mapApiKey',
+                  urlTemplate: mapStyles[currentStyle],
                   userAgentPackageName:
                       'com.undergrad_proj.walking_in_the_woods',
                 ),
@@ -145,6 +166,15 @@ class _MapContainerState extends State<MapContainer> {
                   ],
                 ),
               ),
+            Positioned(
+              bottom: 50,
+              right: 10,
+              child: FloatingActionButton(
+                heroTag: "mapStyleBtn",
+                onPressed: _openMapStylePicker,
+                child: const Icon(Icons.layers),
+              ),
+            ),
             _buildSearchBar(size),
             _buildSuggestions(),
             if (_usingDefaultLocation) _buildGpsWarning(),
@@ -152,6 +182,7 @@ class _MapContainerState extends State<MapContainer> {
               bottom: 20,
               left: 20,
               child: FloatingActionButton(
+                heroTag: "recentreBtn",
                 mini: true,
                 backgroundColor: Colors.white,
                 onPressed: _loadLocation,
@@ -197,6 +228,7 @@ class _MapContainerState extends State<MapContainer> {
         ),
         child: Row(
           children: [
+            SizedBox(width: 8),
             const Icon(Icons.search),
             Expanded(
               child: TextField(
@@ -314,6 +346,84 @@ class _MapContainerState extends State<MapContainer> {
         ),
       ),
     );
+  }
+
+  void _openMapStylePicker() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Choose map style",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                GridView.count(
+                  shrinkWrap: true,
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  children: MapStyle.values.map((style) {
+                    final bool isSelected = currentStyle == style;
+
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isSelected ? Colors.blue : Colors.grey[500],
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        padding: EdgeInsets.all(12),
+                      ),
+                      onPressed: () {
+                        setState(() => currentStyle = style);
+                        Navigator.pop(context);
+                      },
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(_mapStyleIcon(style), size: 32),
+                          SizedBox(height: 8),
+                          Text(style.toString().split('.').last),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  IconData _mapStyleIcon(MapStyle style) {
+    switch (style) {
+      case MapStyle.Streets:
+        return Icons.directions;
+      case MapStyle.Satellite:
+        return Icons.satellite;
+      case MapStyle.Landscape:
+        return Icons.terrain;
+      case MapStyle.OpenStreetMap:
+        return Icons.map;
+      case MapStyle.Outdoor:
+        return Icons.forest;
+      case MapStyle.Toner:
+        return Icons.contrast;
+      case MapStyle.Topo:
+        return Icons.layers;
+      case MapStyle.UK:
+        return Icons.flag;
+    }
   }
 
   // --------------------- LOGIC ---------------
