@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 
 import '../enums/map_style.dart';
 import '../services/location_service.dart';
+import 'handle_reports.dart';
 
 class MapContainer extends StatefulWidget {
   final void Function(LatLng)? onLocationSelected;
@@ -42,11 +43,17 @@ class _MapContainerState extends State<MapContainer> {
       {}; //local cache for faster suggestions
   final GlobalKey _suggestionsKey = GlobalKey();
 
+  bool showOtherReports = true; //controlled by switch
   final List<Marker> _markers = [];
+  final List<Marker> _otherReportsmarkers = [];
 
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadReportMarkers();
+    });
 
     mapStyles = {
       MapStyle.Landscape:
@@ -78,12 +85,15 @@ class _MapContainerState extends State<MapContainer> {
           size: 35,
         ),
       ));
-      setState(() {
-        _mapLoading = false;
-      });
+      _mapLoading = false;
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _loadLocation();
+      });
+    }
+    if (mounted) {
+      setState(() {
+        _mapLoading = false;
       });
     }
   }
@@ -93,6 +103,18 @@ class _MapContainerState extends State<MapContainer> {
     _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadReportMarkers() async {
+    try {
+      final markers =
+          await HandleReports.getReportMarkers(context); // pass context
+      setState(() {
+        _otherReportsmarkers.addAll(markers);
+      });
+    } catch (e) {
+      debugPrint('Error loading markers: $e');
+    }
   }
 
   @override
@@ -149,6 +171,7 @@ class _MapContainerState extends State<MapContainer> {
                 MarkerLayer(
                   markers: _markers,
                 ),
+                if (showOtherReports) MarkerLayer(markers: _otherReportsmarkers)
               ],
             ),
             if (_mapLoading)
@@ -173,6 +196,36 @@ class _MapContainerState extends State<MapContainer> {
                 heroTag: "mapStyleBtn",
                 onPressed: _openMapStylePicker,
                 child: const Icon(Icons.layers),
+              ),
+            ),
+            Positioned(
+              top: 15,
+              left: 15,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue),
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(height: 8),
+                      const Text("Show all reports"),
+                      Switch(
+                        value: showOtherReports,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: (value) {
+                          setState(() {
+                            showOtherReports = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             _buildSearchBar(size),

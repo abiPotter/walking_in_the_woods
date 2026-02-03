@@ -20,8 +20,30 @@ class HomePage extends StatelessWidget {
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.75,
             child: MapContainer(onLocationSelected: (latLng) {
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => ReportPage(initialLocation: latLng)));
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text('Create Report'),
+                    content: Text(
+                        'Do you want to make a report at this location?\n\nLat: ${latLng.latitude.toStringAsFixed(5)}, Lng: ${latLng.longitude.toStringAsFixed(5)}'),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, false), // cancel
+                        child: const Text('No'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => ReportPage(
+                                    initialLocation: latLng))), // confirm
+                        child: const Text('Yes'),
+                      ),
+                    ],
+                  );
+                },
+              );
             }),
           ),
           if (!keyboardOpen)
