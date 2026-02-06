@@ -328,7 +328,9 @@ class _ReportPageState extends State<ReportPage> {
         "date": Timestamp.fromDate(reportedDate!),
         "description": shortDescription,
         "long description": longDescription,
-        "photos": imageUrls
+        "photos": imageUrls,
+        "likes": 0,
+        "dislikes": 0
       };
 
       final reportRef = await db.collection("reports").add(report);

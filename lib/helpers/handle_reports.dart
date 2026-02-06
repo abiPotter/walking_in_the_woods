@@ -20,6 +20,8 @@ class HandleReports {
           'description': data['description'],
           'longDescription': data['long description'],
           'photos': data['photos'],
+          'likes': data['likes'],
+          'dislikes': data['dislikes']
         };
       }).toList();
       return allReports;
@@ -44,70 +46,118 @@ class HandleReports {
             child: GestureDetector(
               onTap: () {
                 showModalBottomSheet(
-                  context: context,
-                  builder: (_) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(report['description'] ?? '',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text(
-                            (report['longDescription'] == null ||
-                                    report['longDescription']
-                                        .toString()
-                                        .trim()
-                                        .isEmpty)
-                                ? '(No further details provided)'
-                                : report['longDescription'],
-                            style: TextStyle(fontStyle: FontStyle.italic)),
-                        const SizedBox(height: 8),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              const TextSpan(
-                                text: 'Reported on: ',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: report['date'].toString().split(' ')[0],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Photos: ',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 5),
-                        report['photos'] != null && report['photos']!.isNotEmpty
-                            ? Expanded(
-                                child: SizedBox(
-                                  height: 80,
-                                  child: GridView.builder(
-                                    itemCount: report['photos']?.length ?? 0,
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      crossAxisSpacing: 4,
-                                      mainAxisSpacing: 4,
+                    context: context,
+                    builder: (_) {
+                      return StatefulBuilder(builder: (context, setModalState) {
+                        return Stack(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  16, 48, 16, 16), // top:48,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(report['description'] ?? '',
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                      (report['longDescription'] == null ||
+                                              report['longDescription']
+                                                  .toString()
+                                                  .trim()
+                                                  .isEmpty)
+                                          ? '(No further details provided)'
+                                          : report['longDescription'],
+                                      style: TextStyle(
+                                          fontStyle: FontStyle.italic)),
+                                  const SizedBox(height: 8),
+                                  Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        const TextSpan(
+                                          text: 'Reported on: ',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        TextSpan(
+                                          text: report['date']
+                                              .toString()
+                                              .split(' ')[0],
+                                        ),
+                                      ],
                                     ),
-                                    itemBuilder: (context, index) {
-                                      return Image.network(
-                                        report['photos'][index],
-                                        fit: BoxFit.cover,
-                                      );
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text('Photos: ',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 5),
+                                  report['photos'] != null &&
+                                          report['photos']!.isNotEmpty
+                                      ? Expanded(
+                                          child: SizedBox(
+                                            height: 80,
+                                            child: GridView.builder(
+                                              itemCount:
+                                                  report['photos']?.length ?? 0,
+                                              gridDelegate:
+                                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: 3,
+                                                crossAxisSpacing: 4,
+                                                mainAxisSpacing: 4,
+                                              ),
+                                              itemBuilder: (context, index) {
+                                                return Image.network(
+                                                  report['photos'][index],
+                                                  fit: BoxFit.cover,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        )
+                                      : Text("No images added"),
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Row(children: [
+                                Column(children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.thumb_up,
+                                        color: Colors.green, size: 28),
+                                    onPressed: () async {
+                                      setModalState(() {
+                                        report['likes']++;
+                                      });
+                                      await likeReport(report);
                                     },
                                   ),
-                                ),
-                              )
-                            : Text("No images added"),
-                      ],
-                    ),
-                  ),
-                );
+                                  Text(report['likes'].toString())
+                                ]),
+                                Column(children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.thumb_down,
+                                        color: Colors.red, size: 28),
+                                    onPressed: () async {
+                                      setModalState(() {
+                                        report['dislikes']++;
+                                      });
+                                      await dislikeReport(report);
+                                    },
+                                  ),
+                                  Text(report['dislikes'].toString()),
+                                ]),
+                              ]),
+                            ),
+                          ],
+                        );
+                      });
+                    });
               },
               child:
                   const Icon(Icons.location_on, color: Colors.purple, size: 35),
@@ -118,5 +168,23 @@ class HandleReports {
         .toList();
 
     return markers;
+  }
+
+  static Future<void> likeReport(Map<String, dynamic> report) async {
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(report['id']) // 👈 use the document ID
+        .update({
+      'likes': FieldValue.increment(1),
+    });
+  }
+
+  static Future<void> dislikeReport(Map<String, dynamic> report) async {
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(report['id']) // 👈 use the document ID
+        .update({
+      'dislikes': FieldValue.increment(1),
+    });
   }
 }
