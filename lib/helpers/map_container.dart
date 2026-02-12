@@ -18,9 +18,17 @@ import 'handle_reports.dart';
 class MapContainer extends StatefulWidget {
   final void Function(LatLng)? onLocationSelected;
   final LatLng? initialLocation;
+  final bool showReportsToggle;
+  final bool showSearchBar;
+  final bool showRecentre;
 
   const MapContainer(
-      {super.key, this.onLocationSelected, this.initialLocation});
+      {super.key,
+      this.onLocationSelected,
+      this.initialLocation,
+      required this.showReportsToggle,
+      required this.showSearchBar,
+      required this.showRecentre});
 
   @override
   State<MapContainer> createState() => _MapContainerState();
@@ -46,14 +54,24 @@ class _MapContainerState extends State<MapContainer> {
   bool showOtherReports = true; //controlled by switch
   final List<Marker> _markers = [];
   final List<Marker> _otherReportsmarkers = [];
+  StreamSubscription<List<Marker>>? _markerSubscription;
 
   @override
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadReportMarkers();
-    });
+    if (widget.showReportsToggle) {
+      _markerSubscription =
+          HandleReports.getReportMarkers(context).listen((markers) {
+        setState(() {
+          _otherReportsmarkers
+            ..clear()
+            ..addAll(markers);
+        });
+      });
+    } else {
+      showOtherReports = false;
+    }
 
     mapStyles = {
       MapStyle.Landscape:
@@ -100,21 +118,10 @@ class _MapContainerState extends State<MapContainer> {
 
   @override
   void dispose() {
+    _markerSubscription?.cancel();
     _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadReportMarkers() async {
-    try {
-      final markers =
-          await HandleReports.getReportMarkers(context); // pass context
-      setState(() {
-        _otherReportsmarkers.addAll(markers);
-      });
-    } catch (e) {
-      debugPrint('Error loading markers: $e');
-    }
   }
 
   @override
@@ -198,50 +205,53 @@ class _MapContainerState extends State<MapContainer> {
                 child: const Icon(Icons.layers),
               ),
             ),
-            Positioned(
-              top: 15,
-              left: 15,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue),
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: 8),
-                      const Text("Show all reports"),
-                      Switch(
-                        value: showOtherReports,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        onChanged: (value) {
-                          setState(() {
-                            showOtherReports = value;
-                          });
-                        },
-                      ),
-                    ],
+            if (widget.showReportsToggle)
+              Positioned(
+                top: 15,
+                left: 15,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: 8),
+                        const Text("Show all reports"),
+                        Switch(
+                          value: showOtherReports,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (value) {
+                            setState(() {
+                              showOtherReports = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            _buildSearchBar(size),
-            _buildSuggestions(),
+            if (widget.showSearchBar) _buildSearchBar(size),
+            if (widget.showSearchBar) _buildSuggestions(),
             if (_usingDefaultLocation) _buildGpsWarning(),
-            Positioned(
-              bottom: 20,
-              left: 20,
-              child: FloatingActionButton(
-                heroTag: "recentreBtn",
-                mini: true,
-                backgroundColor: Colors.white,
-                onPressed: _loadLocation,
-                child: Icon(Icons.my_location, color: Colors.blue),
+            if (widget.showRecentre)
+              Positioned(
+                bottom: 20,
+                left: 20,
+                child: FloatingActionButton(
+                  heroTag: "recentreBtn",
+                  mini: true,
+                  backgroundColor: Colors.white,
+                  onPressed: _loadLocation,
+                  child: Icon(Icons.my_location, color: Colors.blue),
+                ),
               ),
-            ),
           ],
         ),
       ),

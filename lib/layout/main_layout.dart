@@ -49,11 +49,14 @@ class MainLayout extends StatelessWidget {
         color: Colors.blue,
         child: ListView(children: [
           DrawerHeader(
-            child: Center(child: Text('Menu')),
+            child: Center(child: Text('Menu', style: TextStyle(fontSize: 20))),
           ),
-          _drawerItem(context, title: 'Home', page: HomePage()),
-          _drawerItem(context, title: 'Report', page: ReportPage()),
-          _drawerItem(context, title: 'Page 2', page: SecondPage())
+          _drawerItem(context,
+              title: 'Home', icon: Icons.home, page: HomePage()),
+          _drawerItem(context,
+              title: 'Report', icon: Icons.report, page: ReportPage()),
+          _drawerItem(context,
+              title: 'Page 2', icon: Icons.pages, page: SecondPage())
         ]),
       ),
     );
@@ -62,10 +65,11 @@ class MainLayout extends StatelessWidget {
   Widget _drawerItem(
     BuildContext context, {
     required String title,
+    required IconData icon,
     required Widget page,
   }) {
     return ListTile(
-      leading: const Icon(Icons.home),
+      leading: Icon(icon),
       title: Text(title, style: const TextStyle(fontSize: 20)),
       onTap: () {
         Navigator.pop(context); //close drawer

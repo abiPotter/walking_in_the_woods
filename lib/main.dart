@@ -8,6 +8,7 @@ import 'helpers/map_ui_state.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,9 +23,17 @@ Future<void> main() async {
     url: supabaseUrl!,
     anonKey: supabaseKey!,
   );
+  await ensureSignedIn();
 
   runApp(ChangeNotifierProvider(
       create: (_) => MapUiState(), child: const MyApp()));
+}
+
+Future<void> ensureSignedIn() async {
+  final auth = FirebaseAuth.instance;
+  if (auth.currentUser == null) {
+    await auth.signInAnonymously();
+  }
 }
 
 class MyApp extends StatelessWidget {

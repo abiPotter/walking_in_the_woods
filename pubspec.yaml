@@ -43,6 +43,7 @@ dependencies:
   image_picker: ^0.8.7+6
   flutter_dotenv: ^5.1.0
   firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
   cloud_firestore: ^6.1.2
   supabase_flutter: ^2.12.0
 
