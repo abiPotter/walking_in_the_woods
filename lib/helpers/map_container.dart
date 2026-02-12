@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:my_app/helpers/map_ui_state.dart';
 import 'package:provider/provider.dart';
@@ -53,7 +54,7 @@ class _MapContainerState extends State<MapContainer> {
 
   bool showOtherReports = true; //controlled by switch
   final List<Marker> _markers = [];
-  final List<Marker> _otherReportsmarkers = [];
+  List<Marker> _otherReportsmarkers = [];
   StreamSubscription<List<Marker>>? _markerSubscription;
 
   @override
@@ -64,9 +65,7 @@ class _MapContainerState extends State<MapContainer> {
       _markerSubscription =
           HandleReports.getReportMarkers(context).listen((markers) {
         setState(() {
-          _otherReportsmarkers
-            ..clear()
-            ..addAll(markers);
+          _otherReportsmarkers = List.from(markers);
         });
       });
     } else {
@@ -127,7 +126,7 @@ class _MapContainerState extends State<MapContainer> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
+    
     return Column(children: [
       Expanded(
         child: Stack(
@@ -178,7 +177,7 @@ class _MapContainerState extends State<MapContainer> {
                 MarkerLayer(
                   markers: _markers,
                 ),
-                if (showOtherReports) MarkerLayer(markers: _otherReportsmarkers)
+                if (showOtherReports) MarkerClusterLayerWidget(options: _buildClusterLayer(_otherReportsmarkers)),
               ],
             ),
             if (_mapLoading)
@@ -487,6 +486,29 @@ class _MapContainerState extends State<MapContainer> {
       case MapStyle.UK:
         return Icons.flag;
     }
+  }
+
+  MarkerClusterLayerOptions _buildClusterLayer(List<Marker> markers) {
+    return MarkerClusterLayerOptions(
+      maxClusterRadius: 120,
+      disableClusteringAtZoom: 16,
+      size: const Size(30, 30),
+      markers: markers,
+      showPolygon: false,
+      builder: (context, cluster) {
+        return Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.purple,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            cluster.length.toString(),
+            style: const TextStyle(color: Colors.white),
+          ),
+        );
+      },
+    );
   }
 
   // --------------------- LOGIC ---------------

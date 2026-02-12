@@ -18,7 +18,7 @@ class HomePage extends StatelessWidget {
       child: SingleChildScrollView(
         child: Column(children: [
           SizedBox(
-            height: MediaQuery.of(context).size.height * 0.75,
+            height: MediaQuery.of(context).size.height * 0.8,
             child: MapContainer(
                 showReportsToggle: true,
                 showSearchBar: true,
@@ -52,7 +52,7 @@ class HomePage extends StatelessWidget {
           ),
           if (!keyboardOpen)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 30),
+              padding: const EdgeInsets.symmetric(vertical: 10),
               child: FloatingActionButton.extended(
                 onPressed: () {
                   //open profile
