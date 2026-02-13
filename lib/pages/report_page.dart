@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 import '../helpers/map_container.dart';
 import '../layout/main_layout.dart';
 import 'home_page.dart';
+import '../enums/report_status.dart';
 
 class ReportPage extends StatefulWidget {
   final LatLng? initialLocation;
@@ -346,7 +347,8 @@ class _ReportPageState extends State<ReportPage> {
         "likes": 0,
         "dislikes": 0,
         "votes": {},
-        "userid": userid
+        "userid": userid,
+        "status": ReportStatus.Submitted.toString()
       };
 
       final reportRef = await db.collection("reports").add(report);

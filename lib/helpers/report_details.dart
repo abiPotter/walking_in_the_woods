@@ -146,6 +146,22 @@ class ReportDetails {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(
+                                text: 'Status: ',
+                                style: TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                              TextSpan(
+                                text: report['status'].split('.')[1],
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Text('Photos: ',
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.bold)),

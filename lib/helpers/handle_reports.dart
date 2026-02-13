@@ -37,6 +37,7 @@ class HandleReports {
             'dislikes': data['dislikes'] ?? 0,
             'votes': Map<String, dynamic>.from(data['votes'] ?? {}),
             'location text': data['location text'] ?? '',
+            'status': data['status']
           };
         }).toList();
       } catch (e, stack) {
