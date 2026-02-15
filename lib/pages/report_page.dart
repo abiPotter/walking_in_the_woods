@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -6,9 +9,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 
+import 'package:http/http.dart' as http;
+
 import '../helpers/map_container.dart';
 import '../layout/main_layout.dart';
 import 'home_page.dart';
+import '../enums/report_status.dart';
 
 class ReportPage extends StatefulWidget {
   final LatLng? initialLocation;
@@ -92,6 +98,9 @@ class _ReportPageState extends State<ReportPage> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: MapContainer(
+                            showReportsToggle: false,
+                            showSearchBar: true,
+                            showRecentre: true,
                             initialLocation: selectedLocation,
                             onLocationSelected: (latLng) {
                               setState(() {
@@ -267,7 +276,7 @@ class _ReportPageState extends State<ReportPage> {
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      lastDate: DateTime.now(),
     );
 
     if (datePicked != null) {
@@ -321,14 +330,25 @@ class _ReportPageState extends State<ReportPage> {
         imageUrls = await uploadImages(_images!);
       }
 
+      final userid = FirebaseAuth.instance.currentUser!.uid;
+
+      final locationText = await convertlatlngToLocationText(
+          selectedLocation!.latitude, selectedLocation!.longitude);
+
       //save logic
       final report = <String, dynamic>{
-        "latitute": selectedLocation?.latitude,
-        "longitude": selectedLocation?.longitude,
+        "latitude": selectedLocation!.latitude,
+        "longitude": selectedLocation!.longitude,
+        "location text": locationText,
         "date": Timestamp.fromDate(reportedDate!),
         "description": shortDescription,
         "long description": longDescription,
-        "photos": imageUrls
+        "photos": imageUrls,
+        "likes": 0,
+        "dislikes": 0,
+        "votes": {},
+        "userid": userid,
+        "status": ReportStatus.Submitted.toString()
       };
 
       final reportRef = await db.collection("reports").add(report);
@@ -388,5 +408,23 @@ class _ReportPageState extends State<ReportPage> {
       downloadUrls.add(imageUrl);
     }
     return downloadUrls;
+  }
+
+  Future<String> convertlatlngToLocationText(double lat, double lng) async {
+    final url = Uri.parse(
+      'https://nominatim.openstreetmap.org/reverse'
+      '?lat=$lat&lon=$lng&format=json',
+    );
+
+    final response = await http.get(
+      url,
+      headers: {'User-Agent': 'RoamAndReport/1.0'},
+    );
+
+    if (response.statusCode != 200) return "Unknown location";
+
+    final locationData = json.decode(response.body);
+
+    return locationData['display_name'] ?? "Unknown location";
   }
 }

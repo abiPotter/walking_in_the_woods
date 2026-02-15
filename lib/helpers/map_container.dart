@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:my_app/helpers/map_ui_state.dart';
 import 'package:provider/provider.dart';
@@ -13,13 +14,22 @@ import 'package:http/http.dart' as http;
 
 import '../enums/map_style.dart';
 import '../services/location_service.dart';
+import 'handle_reports.dart';
 
 class MapContainer extends StatefulWidget {
   final void Function(LatLng)? onLocationSelected;
   final LatLng? initialLocation;
+  final bool showReportsToggle;
+  final bool showSearchBar;
+  final bool showRecentre;
 
   const MapContainer(
-      {super.key, this.onLocationSelected, this.initialLocation});
+      {super.key,
+      this.onLocationSelected,
+      this.initialLocation,
+      required this.showReportsToggle,
+      required this.showSearchBar,
+      required this.showRecentre});
 
   @override
   State<MapContainer> createState() => _MapContainerState();
@@ -42,11 +52,25 @@ class _MapContainerState extends State<MapContainer> {
       {}; //local cache for faster suggestions
   final GlobalKey _suggestionsKey = GlobalKey();
 
+  bool showOtherReports = true; //controlled by switch
   final List<Marker> _markers = [];
+  List<Marker> _otherReportsmarkers = [];
+  StreamSubscription<List<Marker>>? _markerSubscription;
 
   @override
   void initState() {
     super.initState();
+
+    if (widget.showReportsToggle) {
+      _markerSubscription =
+          HandleReports.getReportMarkers(context).listen((markers) {
+        setState(() {
+          _otherReportsmarkers = List.from(markers);
+        });
+      });
+    } else {
+      showOtherReports = false;
+    }
 
     mapStyles = {
       MapStyle.Landscape:
@@ -78,18 +102,22 @@ class _MapContainerState extends State<MapContainer> {
           size: 35,
         ),
       ));
-      setState(() {
-        _mapLoading = false;
-      });
+      _mapLoading = false;
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _loadLocation();
+      });
+    }
+    if (mounted) {
+      setState(() {
+        _mapLoading = false;
       });
     }
   }
 
   @override
   void dispose() {
+    _markerSubscription?.cancel();
     _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -98,7 +126,7 @@ class _MapContainerState extends State<MapContainer> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
+    
     return Column(children: [
       Expanded(
         child: Stack(
@@ -149,6 +177,7 @@ class _MapContainerState extends State<MapContainer> {
                 MarkerLayer(
                   markers: _markers,
                 ),
+                if (showOtherReports) MarkerClusterLayerWidget(options: _buildClusterLayer(_otherReportsmarkers)),
               ],
             ),
             if (_mapLoading)
@@ -175,20 +204,53 @@ class _MapContainerState extends State<MapContainer> {
                 child: const Icon(Icons.layers),
               ),
             ),
-            _buildSearchBar(size),
-            _buildSuggestions(),
-            if (_usingDefaultLocation) _buildGpsWarning(),
-            Positioned(
-              bottom: 20,
-              left: 20,
-              child: FloatingActionButton(
-                heroTag: "recentreBtn",
-                mini: true,
-                backgroundColor: Colors.white,
-                onPressed: _loadLocation,
-                child: Icon(Icons.my_location, color: Colors.blue),
+            if (widget.showReportsToggle)
+              Positioned(
+                top: 15,
+                left: 15,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: 8),
+                        const Text("Show all reports"),
+                        Switch(
+                          value: showOtherReports,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (value) {
+                            setState(() {
+                              showOtherReports = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
+            if (widget.showSearchBar) _buildSearchBar(size),
+            if (widget.showSearchBar) _buildSuggestions(),
+            if (_usingDefaultLocation) _buildGpsWarning(),
+            if (widget.showRecentre)
+              Positioned(
+                bottom: 20,
+                left: 20,
+                child: FloatingActionButton(
+                  heroTag: "recentreBtn",
+                  mini: true,
+                  backgroundColor: Colors.white,
+                  onPressed: _loadLocation,
+                  child: Icon(Icons.my_location, color: Colors.blue),
+                ),
+              ),
           ],
         ),
       ),
@@ -424,6 +486,29 @@ class _MapContainerState extends State<MapContainer> {
       case MapStyle.UK:
         return Icons.flag;
     }
+  }
+
+  MarkerClusterLayerOptions _buildClusterLayer(List<Marker> markers) {
+    return MarkerClusterLayerOptions(
+      maxClusterRadius: 120,
+      disableClusteringAtZoom: 16,
+      size: const Size(30, 30),
+      markers: markers,
+      showPolygon: false,
+      builder: (context, cluster) {
+        return Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.purple,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            cluster.length.toString(),
+            style: const TextStyle(color: Colors.white),
+          ),
+        );
+      },
+    );
   }
 
   // --------------------- LOGIC ---------------
