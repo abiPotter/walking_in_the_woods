@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -83,7 +83,7 @@ class _ReportPageState extends State<ReportPage> {
                         ),
                       ),
                       Text(selectedLocation != null
-                          ? "Confirm this is the correct location for the problem:"
+                          ? "Check this is the correct location for the problem:"
                           : "Please select the location for the problem on the map:"),
                       SizedBox(height: 8),
                       Container(
@@ -101,6 +101,7 @@ class _ReportPageState extends State<ReportPage> {
                             showReportsToggle: false,
                             showSearchBar: true,
                             showRecentre: true,
+                            isShowingReportDetails: false,
                             initialLocation: selectedLocation,
                             onLocationSelected: (latLng) {
                               setState(() {
@@ -193,7 +194,8 @@ class _ReportPageState extends State<ReportPage> {
                             fontSize: 16, // optional, adjust size
                           )),
                       Text(
-                          "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected"),
+                          "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected", 
+                          style: TextStyle(fontStyle: FontStyle.italic)),
                       TextFormField(
                         maxLines: null, // grows vertically
                         minLines: 3,
@@ -216,7 +218,8 @@ class _ReportPageState extends State<ReportPage> {
                         ),
                       ),
                       Text(
-                          "This could include: \n - Close up of the problem \n - Distance picture for context"),
+                          "This could include: \n - Close up of the problem \n - Distance picture for context",
+                          style: TextStyle(fontStyle: FontStyle.italic)),
                       SizedBox(height: 10),
                       Row(
                         children: [
@@ -238,9 +241,18 @@ class _ReportPageState extends State<ReportPage> {
                                         mainAxisSpacing: 4,
                                       ),
                                       itemBuilder: (context, index) {
-                                        return Image.file(
-                                          File(_images![index].path),
-                                          fit: BoxFit.cover,
+                                        return FutureBuilder<Uint8List>(
+                                          future: _images![index].readAsBytes(),
+                                          builder: (context, snapshot) {
+                                            if (!snapshot.hasData) {
+                                              return const Center(child: CircularProgressIndicator());
+                                            }
+
+                                            return Image.memory(
+                                              snapshot.data!,
+                                              fit: BoxFit.cover,
+                                            );
+                                          },
                                         );
                                       },
                                     ),
@@ -394,13 +406,13 @@ class _ReportPageState extends State<ReportPage> {
     List<String> downloadUrls = [];
 
     for (var image in images) {
-      File file = File(image.path);
+      final bytes = await image.readAsBytes();
       String fileName = "${DateTime.now().toString()}_${image.name}";
 
       // Upload to 'reports' bucket
       await supabase.storage
           .from('reports')
-          .uploadBinary('images/$fileName', await file.readAsBytes());
+          .uploadBinary('images/$fileName', bytes, fileOptions: const FileOptions(contentType: 'image/jpeg'));
 
       final imageUrl =
           supabase.storage.from('reports').getPublicUrl('images/$fileName');

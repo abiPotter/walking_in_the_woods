@@ -10,6 +10,8 @@ import 'package:my_app/helpers/map_ui_state.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:http/http.dart' as http;
 
 import '../enums/map_style.dart';
@@ -22,6 +24,7 @@ class MapContainer extends StatefulWidget {
   final bool showReportsToggle;
   final bool showSearchBar;
   final bool showRecentre;
+  final bool isShowingReportDetails;
 
   const MapContainer(
       {super.key,
@@ -29,14 +32,18 @@ class MapContainer extends StatefulWidget {
       this.initialLocation,
       required this.showReportsToggle,
       required this.showSearchBar,
-      required this.showRecentre});
+      required this.showRecentre,
+      required this.isShowingReportDetails});
 
   @override
   State<MapContainer> createState() => _MapContainerState();
 }
 
 class _MapContainerState extends State<MapContainer> {
-  final String? mapApiKey = dotenv.env['MAPTILER_API_KEY'];
+  final String? mapApiKey = kIsWeb
+      ? const String.fromEnvironment('MAPTILER_API_KEY')
+      : dotenv.env['MAPTILER_API_KEY'];
+
   late final Map<MapStyle, String> mapStyles;
   MapStyle currentStyle = MapStyle.OpenStreetMap;
 
@@ -126,7 +133,7 @@ class _MapContainerState extends State<MapContainer> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    
+
     return Column(children: [
       Expanded(
         child: Stack(
@@ -139,21 +146,23 @@ class _MapContainerState extends State<MapContainer> {
                       const LatLng(10, 10),
                   initialZoom: 15,
                   onTap: (tapPosition, point) {
-                    setState(() {
-                      _markers.clear();
-                      _markers.add(
-                        Marker(
-                          width: 150,
-                          height: 150,
-                          point: point,
-                          child: Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                            size: 35,
+                    if (!widget.isShowingReportDetails) {
+                      setState(() {
+                        _markers.clear();
+                        _markers.add(
+                          Marker(
+                            width: 150,
+                            height: 150,
+                            point: point,
+                            child: Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                              size: 35,
+                            ),
                           ),
-                        ),
-                      );
-                    });
+                        );
+                      });
+                    }
                     if (widget.onLocationSelected != null) {
                       widget.onLocationSelected!(point);
                     }
@@ -177,7 +186,9 @@ class _MapContainerState extends State<MapContainer> {
                 MarkerLayer(
                   markers: _markers,
                 ),
-                if (showOtherReports) MarkerClusterLayerWidget(options: _buildClusterLayer(_otherReportsmarkers)),
+                if (showOtherReports)
+                  MarkerClusterLayerWidget(
+                      options: _buildClusterLayer(_otherReportsmarkers)),
               ],
             ),
             if (_mapLoading)
@@ -431,6 +442,7 @@ class _MapContainerState extends State<MapContainer> {
                 GridView.count(
                   shrinkWrap: true,
                   crossAxisCount: 2,
+                  childAspectRatio: 1.5,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   children: MapStyle.values.map((style) {

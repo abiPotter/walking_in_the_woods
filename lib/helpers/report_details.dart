@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../services/image_viewer.dart';
 import 'map_container.dart';
 
 class ReportDetails {
@@ -112,6 +113,7 @@ class ReportDetails {
                                   showReportsToggle: false,
                                   showSearchBar: false,
                                   showRecentre: false,
+                                  isShowingReportDetails: true,
                                   initialLocation: LatLng(
                                       report['latitude'], report['longitude']),
                                 ))),
@@ -168,7 +170,7 @@ class ReportDetails {
                         const SizedBox(height: 5),
                         report['photos'] != null && report['photos']!.isNotEmpty
                             ? SizedBox(
-                                height: 100,
+                                height: 120,
                                 child: GridView.builder(
                                   itemCount: report['photos']?.length ?? 0,
                                   gridDelegate:
@@ -178,9 +180,21 @@ class ReportDetails {
                                     mainAxisSpacing: 4,
                                   ),
                                   itemBuilder: (context, index) {
-                                    return Image.network(
-                                      report['photos'][index],
-                                      fit: BoxFit.cover,
+                                    final imageUrl = report['photos'][index];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                            context: context,
+                                            builder: (_) => ImageGalleryViewer(
+                                                  images: List<String>.from(
+                                                      report['photos']),
+                                                  initialIndex: index,
+                                                ));
+                                      },
+                                      child: Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                      ),
                                     );
                                   },
                                 ),

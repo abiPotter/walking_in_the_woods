@@ -10,7 +10,7 @@ class LocationService {
 
     try {
       serviceEnabled = await location.serviceEnabled();
-    } on PlatformException catch (e) {
+    } on PlatformException {
       // this error will always occur as the Location is not setup before this line is reached
       // treat it as though the service is not enabled
       serviceEnabled = false;

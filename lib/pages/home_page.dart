@@ -23,6 +23,7 @@ class HomePage extends StatelessWidget {
                 showReportsToggle: true,
                 showSearchBar: true,
                 showRecentre: true,
+                isShowingReportDetails: false,
                 onLocationSelected: (latLng) {
                   showDialog(
                     context: context,
