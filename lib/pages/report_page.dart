@@ -45,7 +45,7 @@ class _ReportPageState extends State<ReportPage> {
     "Safety hazard",
     "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
     "Flooding",
-    "Temporary closure"
+    "Temporary closure",
   ];
 
   final TextEditingController _dateController = TextEditingController();
@@ -65,222 +65,237 @@ class _ReportPageState extends State<ReportPage> {
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-        child: Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Center(
-                child: Form(
-                    key: _formKey,
-                    autovalidateMode: hasSaveBeenAttempted
-                        ? AutovalidateMode.always
-                        : AutovalidateMode.disabled,
-                    child: ListView(children: [
-                      Text(
-                        "Location:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18, // optional, adjust size
-                        ),
-                      ),
-                      Text(selectedLocation != null
-                          ? "Check this is the correct location for the problem:"
-                          : "Please select the location for the problem on the map:"),
-                      SizedBox(height: 8),
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.4,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _locationError != null
-                                ? Colors.red
-                                : Colors.grey,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: MapContainer(
-                            showReportsToggle: false,
-                            showSearchBar: true,
-                            showRecentre: true,
-                            isShowingReportDetails: false,
-                            initialLocation: selectedLocation,
-                            onLocationSelected: (latLng) {
-                              setState(() {
-                                selectedLocation = latLng;
-                                _locationError = null;
-                              });
-                            }),
-                      ),
-                      if (selectedLocation != null)
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            'Selected Location: ${selectedLocation!.latitude}, ${selectedLocation!.longitude}',
-                          ),
-                        ),
-                      if (_locationError != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4.0, left: 8),
-                          child: Text(
-                            _locationError!,
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      SizedBox(height: 12),
-                      Text(
-                        "Date Found:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18, // optional, adjust size
-                        ),
-                      ),
-                      TextFormField(
-                        controller: _dateController,
-                        readOnly: true,
-                        decoration: const InputDecoration(
-                            hintText: '  Select date',
-                            suffixIcon: Icon(Icons.calendar_today)),
-                        onTap: () => pickDate(context),
-                        validator: (val) {
-                          if (val == null || val.isEmpty) {
-                            return 'Please select a date';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        "Description:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18, // optional, adjust size
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width - 32),
-                        child: DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          initialValue: shortDescription,
-                          decoration: const InputDecoration(
-                            labelText: 'Identify the problem',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: possibleProblems.map((item) {
-                            return DropdownMenuItem<String>(
-                              value: item,
-                              child: Text(item),
-                            );
-                          }).toList(),
-                          onChanged: (desc) {
-                            setState(() {
-                              shortDescription = desc;
-                            });
-                            if (hasSaveBeenAttempted) {
-                              _formKey.currentState!.validate();
-                            }
-                          },
-                          validator: (val) {
-                            if (val == null || val.isEmpty) {
-                              return 'Please select a problem';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text("Any additional information:",
-                          style: TextStyle(
-                            fontSize: 16, // optional, adjust size
-                          )),
-                      Text(
-                          "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected", 
-                          style: TextStyle(fontStyle: FontStyle.italic)),
-                      TextFormField(
-                        maxLines: null, // grows vertically
-                        minLines: 3,
-                        keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter text',
-                          alignLabelWithHint: true,
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: (longDesc) {
-                          longDescription = longDesc;
-                        },
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        "Photos:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18, // optional, adjust size
-                        ),
-                      ),
-                      Text(
-                          "This could include: \n - Close up of the problem \n - Distance picture for context",
-                          style: TextStyle(fontStyle: FontStyle.italic)),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.photo),
-                            iconSize: 60,
-                            onPressed: _pickImage,
-                          ),
-                          _images != null && _images!.isNotEmpty
-                              ? Expanded(
-                                  child: SizedBox(
-                                    height: 150,
-                                    child: GridView.builder(
-                                      itemCount: _images?.length ?? 0,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 3,
-                                        crossAxisSpacing: 4,
-                                        mainAxisSpacing: 4,
-                                      ),
-                                      itemBuilder: (context, index) {
-                                        return FutureBuilder<Uint8List>(
-                                          future: _images![index].readAsBytes(),
-                                          builder: (context, snapshot) {
-                                            if (!snapshot.hasData) {
-                                              return const Center(child: CircularProgressIndicator());
-                                            }
-
-                                            return Image.memory(
-                                              snapshot.data!,
-                                              fit: BoxFit.cover,
-                                            );
-                                          },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        color: Colors.white,
+        child: Center(
+          child: Form(
+            key: _formKey,
+            autovalidateMode: hasSaveBeenAttempted
+                ? AutovalidateMode.always
+                : AutovalidateMode.disabled,
+            child: ListView(
+              children: [
+                Text(
+                  "Location:",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18, // optional, adjust size
+                  ),
+                ),
+                Text(
+                  selectedLocation != null
+                      ? "Check this is the correct location for the problem:"
+                      : "Please select the location for the problem on the map:",
+                ),
+                SizedBox(height: 8),
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _locationError != null ? Colors.red : Colors.grey,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: MapContainer(
+                    showReportsToggle: false,
+                    showSearchBar: true,
+                    showRecentre: true,
+                    isShowingReportDetails: false,
+                    initialLocation: selectedLocation,
+                    onLocationSelected: (latLng) {
+                      setState(() {
+                        selectedLocation = latLng;
+                        _locationError = null;
+                      });
+                    },
+                  ),
+                ),
+                if (selectedLocation != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Selected Location: ${selectedLocation!.latitude}, ${selectedLocation!.longitude}',
+                    ),
+                  ),
+                if (_locationError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0, left: 8),
+                    child: Text(
+                      _locationError!,
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                SizedBox(height: 12),
+                Text(
+                  "Date Found:",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18, // optional, adjust size
+                  ),
+                ),
+                TextFormField(
+                  controller: _dateController,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    hintText: '  Select date',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  onTap: () => pickDate(context),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) {
+                      return 'Please select a date';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "Description:",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18, // optional, adjust size
+                  ),
+                ),
+                SizedBox(height: 10),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width - 32,
+                  ),
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: shortDescription,
+                    decoration: const InputDecoration(
+                      labelText: 'Identify the problem',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: possibleProblems.map((item) {
+                      return DropdownMenuItem<String>(
+                        value: item,
+                        child: Text(item),
+                      );
+                    }).toList(),
+                    onChanged: (desc) {
+                      setState(() {
+                        shortDescription = desc;
+                      });
+                      if (hasSaveBeenAttempted) {
+                        _formKey.currentState!.validate();
+                      }
+                    },
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Please select a problem';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "Any additional information:",
+                  style: TextStyle(
+                    fontSize: 16, // optional, adjust size
+                  ),
+                ),
+                Text(
+                  "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected",
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+                TextFormField(
+                  maxLines: null, // grows vertically
+                  minLines: 3,
+                  keyboardType: TextInputType.multiline,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter text',
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (longDesc) {
+                    longDescription = longDesc;
+                  },
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "Photos:",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18, // optional, adjust size
+                  ),
+                ),
+                Text(
+                  "This could include: \n - Close up of the problem \n - Distance picture for context",
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.photo),
+                      iconSize: 60,
+                      onPressed: _pickImage,
+                    ),
+                    _images != null && _images!.isNotEmpty
+                        ? Expanded(
+                            child: SizedBox(
+                              height: 150,
+                              child: GridView.builder(
+                                itemCount: _images?.length ?? 0,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 3,
+                                      crossAxisSpacing: 4,
+                                      mainAxisSpacing: 4,
+                                    ),
+                                itemBuilder: (context, index) {
+                                  return FutureBuilder<Uint8List>(
+                                    future: _images![index].readAsBytes(),
+                                    builder: (context, snapshot) {
+                                      if (!snapshot.hasData) {
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
                                         );
-                                      },
-                                    ),
-                                  ),
-                                )
-                              : Text("No image selected"),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 30),
-                        child: Center(
-                          child: FloatingActionButton.extended(
-                            onPressed: isSaving ? null : saveReport,
-                            icon: isSaving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.save),
-                            label: Text(isSaving ? 'Saving...' : 'Save'),
-                          ),
-                        ),
-                      ),
-                    ])))));
+                                      }
+
+                                      return Image.memory(
+                                        snapshot.data!,
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          )
+                        : Text("No image selected"),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 30),
+                  child: Center(
+                    child: FloatingActionButton.extended(
+                      onPressed: isSaving ? null : saveReport,
+                      icon: isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.save),
+                      label: Text(isSaving ? 'Saving...' : 'Save'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> pickDate(BuildContext context) async {
@@ -345,7 +360,9 @@ class _ReportPageState extends State<ReportPage> {
       final userid = FirebaseAuth.instance.currentUser!.uid;
 
       final locationText = await convertlatlngToLocationText(
-          selectedLocation!.latitude, selectedLocation!.longitude);
+        selectedLocation!.latitude,
+        selectedLocation!.longitude,
+      );
 
       //save logic
       final report = <String, dynamic>{
@@ -360,7 +377,7 @@ class _ReportPageState extends State<ReportPage> {
         "dislikes": 0,
         "votes": {},
         "userid": userid,
-        "status": ReportStatus.Submitted.toString()
+        "status": ReportStatus.Submitted.toString(),
       };
 
       final reportRef = await db.collection("reports").add(report);
@@ -374,16 +391,19 @@ class _ReportPageState extends State<ReportPage> {
         builder: (ctx) => AlertDialog(
           title: const Text('Report Saved Successsfully'),
           content: const Text(
-              'Do you want to return to the Home page or stay on this page?'),
+            'Do you want to return to the Home page or stay on this page?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => HomePage())), // return home
+                MaterialPageRoute(builder: (_) => HomePage()),
+              ), // return home
               child: const Text('Return Home'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ReportPage())), // stay
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => ReportPage())), // stay
               child: const Text('Stay'),
             ),
           ],
@@ -391,9 +411,9 @@ class _ReportPageState extends State<ReportPage> {
       );
     } catch (e) {
       // Handle errors
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving report: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving report: $e')));
       debugPrint("error: $e");
     } finally {
       setState(() {
@@ -412,10 +432,15 @@ class _ReportPageState extends State<ReportPage> {
       // Upload to 'reports' bucket
       await supabase.storage
           .from('reports')
-          .uploadBinary('images/$fileName', bytes, fileOptions: const FileOptions(contentType: 'image/jpeg'));
+          .uploadBinary(
+            'images/$fileName',
+            bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
 
-      final imageUrl =
-          supabase.storage.from('reports').getPublicUrl('images/$fileName');
+      final imageUrl = supabase.storage
+          .from('reports')
+          .getPublicUrl('images/$fileName');
 
       downloadUrls.add(imageUrl);
     }

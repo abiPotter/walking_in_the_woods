@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helpers/map_ui_state.dart';
 import 'package:my_app/pages/report_page.dart';
 import 'package:my_app/pages/profile.dart';
 import 'package:my_app/pages/second_page.dart';
-import 'package:provider/provider.dart';
 
 import '../pages/home_page.dart';
 
@@ -25,8 +23,10 @@ class MainLayout extends StatelessWidget {
       title: Column(
         children: [
           Text('Roam and Report', style: TextStyle(fontSize: 24)),
-          Text("Roam the Trails, Report the Troubles",
-              style: TextStyle(fontSize: 14)),
+          Text(
+            "Roam the Trails, Report the Troubles",
+            style: TextStyle(fontSize: 14),
+          ),
         ],
       ),
       backgroundColor: Colors.blue,
@@ -35,8 +35,9 @@ class MainLayout extends StatelessWidget {
           icon: Icon(Icons.person),
           onPressed: () {
             //open profile
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => ProfilePage()));
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => ProfilePage()));
           },
         ),
       ],
@@ -47,17 +48,33 @@ class MainLayout extends StatelessWidget {
     return Drawer(
       child: Container(
         color: Colors.blue,
-        child: ListView(children: [
-          DrawerHeader(
-            child: Center(child: Text('Menu', style: TextStyle(fontSize: 20))),
-          ),
-          _drawerItem(context,
-              title: 'Home', icon: Icons.home, page: HomePage()),
-          _drawerItem(context,
-              title: 'Report', icon: Icons.report, page: ReportPage()),
-          _drawerItem(context,
-              title: 'Page 2', icon: Icons.pages, page: SecondPage())
-        ]),
+        child: ListView(
+          children: [
+            DrawerHeader(
+              child: Center(
+                child: Text('Menu', style: TextStyle(fontSize: 20)),
+              ),
+            ),
+            _drawerItem(
+              context,
+              title: 'Home',
+              icon: Icons.home,
+              page: HomePage(),
+            ),
+            _drawerItem(
+              context,
+              title: 'Report',
+              icon: Icons.report,
+              page: ReportPage(),
+            ),
+            _drawerItem(
+              context,
+              title: 'Page 2',
+              icon: Icons.pages,
+              page: SecondPage(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -73,10 +90,7 @@ class MainLayout extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontSize: 20)),
       onTap: () {
         Navigator.pop(context); //close drawer
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => page),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => page));
       },
     );
   }
