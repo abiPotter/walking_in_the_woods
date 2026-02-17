@@ -31,7 +31,7 @@ class _ReportPageState extends State<ReportPage> {
   DateTime? reportedDate;
   String? shortDescription;
   String longDescription = "";
-  List<XFile>? _images = [];
+  List<XFile> _images = [];
 
   final db = FirebaseFirestore.instance;
 
@@ -46,6 +46,7 @@ class _ReportPageState extends State<ReportPage> {
     "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
     "Flooding",
     "Temporary closure",
+    "Farm/wildlife disruption",
   ];
 
   final TextEditingController _dateController = TextEditingController();
@@ -234,14 +235,14 @@ class _ReportPageState extends State<ReportPage> {
                     IconButton(
                       icon: Icon(Icons.photo),
                       iconSize: 60,
-                      onPressed: _pickImage,
+                      onPressed: _showImageSourceSelection,
                     ),
-                    _images != null && _images!.isNotEmpty
+                    _images.isNotEmpty
                         ? Expanded(
                             child: SizedBox(
                               height: 150,
                               child: GridView.builder(
-                                itemCount: _images?.length ?? 0,
+                                itemCount: _images.length,
                                 gridDelegate:
                                     SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 3,
@@ -249,20 +250,50 @@ class _ReportPageState extends State<ReportPage> {
                                       mainAxisSpacing: 4,
                                     ),
                                 itemBuilder: (context, index) {
-                                  return FutureBuilder<Uint8List>(
-                                    future: _images![index].readAsBytes(),
-                                    builder: (context, snapshot) {
-                                      if (!snapshot.hasData) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
+                                  return Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: FutureBuilder<Uint8List>(
+                                          future: _images[index].readAsBytes(),
+                                          builder: (context, snapshot) {
+                                            if (!snapshot.hasData) {
+                                              return const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              );
+                                            }
 
-                                      return Image.memory(
-                                        snapshot.data!,
-                                        fit: BoxFit.cover,
-                                      );
-                                    },
+                                            return Image.memory(
+                                              snapshot.data!,
+                                              fit: BoxFit.cover,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _images.removeAt(index);
+                                            });
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.black54,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            padding: EdgeInsets.all(4),
+                                            child: Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                              size: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 },
                               ),
@@ -318,17 +349,64 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
-  Future<void> _pickImage() async {
-    final List<XFile> selectedImages = await _imagePicker.pickMultiImage(
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 80,
+  void _showImageSourceSelection() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text("Take Photo"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text("Choose from Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
+  }
 
-    if (selectedImages.isNotEmpty) {
-      setState(() {
-        _images = selectedImages;
-      });
+  Future<void> _pickImage(ImageSource source) async {
+    if (source == ImageSource.camera) {
+      final XFile? photo = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+
+      if (photo != null) {
+        setState(() {
+          _images.add(photo);
+        });
+      }
+    }
+
+    if (source == ImageSource.gallery) {
+      final List<XFile> selectedImages = await _imagePicker.pickMultiImage(
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+
+      if (selectedImages.isNotEmpty) {
+        setState(() {
+          _images.addAll(selectedImages);
+        });
+      }
     }
   }
 
@@ -353,8 +431,8 @@ class _ReportPageState extends State<ReportPage> {
 
     try {
       List<String> imageUrls = [];
-      if (_images != null && _images!.isNotEmpty) {
-        imageUrls = await uploadImages(_images!);
+      if (_images.isNotEmpty) {
+        imageUrls = await uploadImages(_images);
       }
 
       final userid = FirebaseAuth.instance.currentUser!.uid;
