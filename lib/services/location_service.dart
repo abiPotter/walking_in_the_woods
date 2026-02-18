@@ -23,7 +23,8 @@ class LocationService {
       }
 
       LocationPermission permissionGranted = await Geolocator.checkPermission();
-      if (permissionGranted == LocationPermission.denied) {
+      if (permissionGranted == LocationPermission.denied ||
+          permissionGranted == LocationPermission.deniedForever) {
         permissionGranted = await Geolocator.requestPermission();
         if (permissionGranted == LocationPermission.denied) {
           return null;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/pages/report_page.dart';
 import 'package:my_app/pages/profile.dart';
-import 'package:my_app/pages/second_page.dart';
+import 'package:my_app/pages/report_management_page.dart';
 
 import '../pages/home_page.dart';
 
@@ -69,9 +69,9 @@ class MainLayout extends StatelessWidget {
             ),
             _drawerItem(
               context,
-              title: 'Page 2',
-              icon: Icons.pages,
-              page: SecondPage(),
+              title: 'Admin',
+              icon: Icons.lock,
+              page: ReportManagementPage(),
             ),
           ],
         ),

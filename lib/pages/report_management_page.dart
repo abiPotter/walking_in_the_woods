@@ -1,36 +1,38 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:my_app/converters/report_status_converter.dart';
 import 'package:my_app/enums/report_status.dart';
 import 'package:my_app/helpers/handle_reports.dart';
-
+import 'package:my_app/helpers/report_details.dart';
+import 'package:my_app/pages/password_page.dart';
 import '../layout/main_layout.dart';
-import '../helpers/report_details.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class ReportManagementPage extends StatefulWidget {
+  const ReportManagementPage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<ReportManagementPage> createState() => _ReportManagementState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  final userid = FirebaseAuth.instance.currentUser!.uid;
-
-  String filter = "Date";
+class _ReportManagementState extends State<ReportManagementPage> {
+  bool unlocked = false;
+  String filter = "Likes";
   String? location;
 
   final TextEditingController _searchController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    if (!unlocked) {
+      return PasswordPage(onSuccess: () => setState(() => unlocked = true));
+    }
+
     return MainLayout(
       child: Center(
         child: Column(
           children: [
             const SizedBox(height: 16),
             const Text(
-              "Your reports",
+              "Manage reports",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -54,11 +56,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       value: 'Resolved',
                       child: Text('Resolved'),
                     ),
-                    DropdownMenuItem(value: 'Date', child: Text('Date')),
+                    DropdownMenuItem(value: 'Likes', child: Text('Likes')),
                   ],
                   onChanged: (status) {
                     setState(() {
                       filter = status!;
+                      location = null;
                     });
                   },
                 ),
@@ -101,11 +104,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
             Expanded(
               child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: HandleReports.getAllReportsStream(
-                  userid,
+                  null,
                   ReportStatusConverter.stringToReportStatus(filter),
                   location,
                 ),
@@ -116,7 +118,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
                   final userReports = snapshot.data ?? [];
 
                   if (userReports.isEmpty) {
@@ -125,16 +126,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         "Cannot find any reports with that location",
                       );
                     }
-                    if (filter == 'Date') {
+                    if (filter == 'Likes') {
                       return const Text(
-                        "You have not submitted any reports yet",
+                        "There has not been any submitted reports yet",
                       );
                     }
                     return const Text(
                       "You have not got any reports under this filter",
                     );
                   }
-
                   return ListView.builder(
                     itemCount: userReports.length,
                     itemBuilder: (context, index) {
@@ -209,9 +209,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           onTap: () => ReportDetails().showDetails(
                             context,
                             reportData,
-                            false,
                             true,
-                            onStatusChanged: () {},
+                            false,
+                            onStatusChanged: () {
+                              setState(() {});
+                            },
                           ),
                         ),
                       );
@@ -241,7 +243,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> searchReportsInLocation(String query) async {
     setState(() {
       _searchController.clear();
-      filter = "Date";
+      filter = "Likes";
       location = query;
     });
   }

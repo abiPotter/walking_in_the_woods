@@ -442,11 +442,17 @@ class _ReportPageState extends State<ReportPage> {
         selectedLocation!.longitude,
       );
 
+      List<String> locationKeywords = locationText
+          .toLowerCase()
+          .replaceAll(',', '')
+          .split(' ');
+
       //save logic
       final report = <String, dynamic>{
         "latitude": selectedLocation!.latitude,
         "longitude": selectedLocation!.longitude,
         "location text": locationText,
+        "location keywords": locationKeywords,
         "date": Timestamp.fromDate(reportedDate!),
         "description": shortDescription,
         "long description": longDescription,
