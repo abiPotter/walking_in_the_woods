@@ -12,7 +12,9 @@ class HandleReports {
     ReportStatus status,
     String? location,
   ) {
-    //filter by: userid, likes, dislikes, submitted, resolved
+    if (location != null) {
+      location = location.toLowerCase().trim();
+    }
 
     Stream<QuerySnapshot<Map<String, dynamic>>> reportSnapshots;
     if (userid == null) {
@@ -45,10 +47,7 @@ class HandleReports {
           //find reports containing location name
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
-              .where(
-                'location keywords',
-                arrayContains: location.toLowerCase().split(' ')[0],
-              )
+              .where('location keywords', arrayContains: location.split(' ')[0])
               .orderBy('likes', descending: true)
               .orderBy('date', descending: true)
               .snapshots();
