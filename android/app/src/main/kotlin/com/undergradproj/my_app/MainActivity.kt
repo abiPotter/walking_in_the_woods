@@ -1,4 +1,4 @@
-package com.undergrad_proj.walking_in_the_woods
+package com.undergradproj.my_app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,5 +1,1 @@
-enum ReportStatus {
-  Submitted,
-  InProgress,
-  Resolved
-}
+enum ReportStatus { Submitted, InProgress, Resolved, Unknown }

@@ -1,1 +1,55 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"walking-in-the-woods","appId":"1:600223632016:android:d06ba41b03a39f1faba615","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"walking-in-the-woods","appId":"1:600223632016:ios:a15495c19a56f485aba615","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"walking-in-the-woods","appId":"1:600223632016:ios:a15495c19a56f485aba615","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"walking-in-the-woods","configurations":{"android":"1:600223632016:android:d06ba41b03a39f1faba615","ios":"1:600223632016:ios:a15495c19a56f485aba615","macos":"1:600223632016:ios:a15495c19a56f485aba615","web":"1:600223632016:web:f384577e75e3ae95aba615","windows":"1:600223632016:web:575df6e2f9a03a6aaba615"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "walking-in-the-woods",
+          "appId": "1:600223632016:android:d06ba41b03a39f1faba615",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "walking-in-the-woods",
+          "appId": "1:600223632016:ios:a15495c19a56f485aba615",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "walking-in-the-woods",
+          "appId": "1:600223632016:ios:a15495c19a56f485aba615",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "walking-in-the-woods",
+          "configurations": {
+            "android": "1:600223632016:android:d06ba41b03a39f1faba615",
+            "ios": "1:600223632016:ios:a15495c19a56f485aba615",
+            "macos": "1:600223632016:ios:a15495c19a56f485aba615",
+            "web": "1:600223632016:web:f384577e75e3ae95aba615",
+            "windows": "1:600223632016:web:575df6e2f9a03a6aaba615"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
