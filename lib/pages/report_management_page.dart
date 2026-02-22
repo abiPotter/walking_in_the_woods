@@ -40,7 +40,7 @@ class _ReportManagementState extends State<ReportManagementPage> {
               children: [
                 SizedBox(width: 20),
                 Text("Filter: "),
-                SizedBox(width: 10),
+                SizedBox(width: 5),
                 DropdownButton<String>(
                   value: filter,
                   items: const [
@@ -67,10 +67,10 @@ class _ReportManagementState extends State<ReportManagementPage> {
                 ),
                 SizedBox(width: 15),
                 Text('Search: '),
-                SizedBox(width: 10),
+                SizedBox(width: 5),
                 SizedBox(
                   height: 40,
-                  width: 150,
+                  width: 140,
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.blue),

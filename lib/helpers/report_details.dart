@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:my_app/converters/report_status_converter.dart';
 import 'package:my_app/enums/report_status.dart';
+import 'package:my_app/helpers/local_council_info.dart';
 
 import '../services/image_viewer.dart';
 import 'map_container.dart';
@@ -315,6 +316,17 @@ class ReportDetails {
                                     fontStyle: FontStyle.italic,
                                   ),
                                 ),
+                          if (isOnReportManagement || isOnUserProfile)
+                            SizedBox(height: 8),
+                          if (isOnReportManagement || isOnUserProfile)
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.apartment),
+                              label: const Text("Local Council Information"),
+                              onPressed: () => showLocalCouncilInfo(
+                                context,
+                                LatLng(report['latitude'], report['longitude']),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -528,6 +540,43 @@ class ReportDetails {
       Navigator.pop(context, null);
       onStatusChanged();
     }
+  }
+
+  void showLocalCouncilInfo(BuildContext context, LatLng location) async {
+    await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Council information',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 23),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  LocalCouncilInfo().showLocalCouncilInfo(location),
+                ],
+              ),
+            ),
+
+            // Close button in true top-right
+            Positioned(
+              right: 0,
+              top: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
