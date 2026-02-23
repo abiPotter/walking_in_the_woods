@@ -32,7 +32,7 @@ class _ReportPageState extends State<ReportPage> {
   DateTime? reportedDate;
   String? shortDescription;
   String longDescription = "";
-  List<XFile> _images = [];
+  final List<XFile> _images = [];
 
   final db = FirebaseFirestore.instance;
 
@@ -499,6 +499,7 @@ class _ReportPageState extends State<ReportPage> {
           ],
         ),
       );
+      if (!mounted) return;
     } catch (e) {
       // Handle errors
       ScaffoldMessenger.of(

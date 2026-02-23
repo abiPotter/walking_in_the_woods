@@ -7,6 +7,7 @@ class ImageGalleryViewer extends StatefulWidget {
   const ImageGalleryViewer({
     required this.images,
     required this.initialIndex,
+    super.key,
   });
 
   @override
@@ -34,9 +35,7 @@ class ImageGalleryViewerState extends State<ImageGalleryViewer> {
             itemCount: widget.images.length,
             itemBuilder: (context, index) {
               return InteractiveViewer(
-                child: Center(
-                  child: Image.network(widget.images[index]),
-                ),
+                child: Center(child: Image.network(widget.images[index])),
               );
             },
           ),

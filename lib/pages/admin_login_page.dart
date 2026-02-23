@@ -67,6 +67,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         return;
       }
 
+      if (!mounted) return;
+
       //store admin state in provider
       Provider.of<AdminState>(context, listen: false).setAdmin(true);
       setState(() => isAdmin = true);
@@ -114,6 +116,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     if (user == null) {
       await FirebaseAuth.instance.signInAnonymously();
     }
+
+    if (!mounted) return;
 
     _emailController.clear();
     _passwordController.clear();
