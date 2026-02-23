@@ -16,6 +16,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _canLoadMap = false;
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +32,10 @@ class _HomePageState extends State<HomePage> {
     if (!hasSeenPrototypeDialog) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showPrototypeWarningDialog();
+      });
+    } else {
+      setState(() {
+        _canLoadMap = true;
       });
     }
   }
@@ -115,6 +121,9 @@ class _HomePageState extends State<HomePage> {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('hasSeenPrototypeWarning', true);
                   Navigator.of(context).pop();
+                  setState(() {
+                    _canLoadMap = true;
+                  });
                 },
                 child: const Text("Continue", style: TextStyle(fontSize: 18)),
               ),
@@ -135,41 +144,43 @@ class _HomePageState extends State<HomePage> {
           children: [
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.8,
-              child: MapContainer(
-                showReportsToggle: true,
-                showSearchBar: true,
-                showRecentre: true,
-                isShowingReportDetails: false,
-                onLocationSelected: (latLng) {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text('Create Report'),
-                        content: Text(
-                          'Do you want to make a report at this location?\n\nLat: ${latLng.latitude.toStringAsFixed(5)}, Lng: ${latLng.longitude.toStringAsFixed(5)}',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(context, false), // cancel
-                            child: const Text('No'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ReportPage(initialLocation: latLng),
+              child: _canLoadMap
+                  ? MapContainer(
+                      showReportsToggle: true,
+                      showSearchBar: true,
+                      showRecentre: true,
+                      isShowingReportDetails: false,
+                      onLocationSelected: (latLng) {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('Create Report'),
+                              content: Text(
+                                'Do you want to make a report at this location?\n\nLat: ${latLng.latitude.toStringAsFixed(5)}, Lng: ${latLng.longitude.toStringAsFixed(5)}',
                               ),
-                            ), // confirm
-                            child: const Text('Yes'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false), // cancel
+                                  child: const Text('No'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          ReportPage(initialLocation: latLng),
+                                    ),
+                                  ), // confirm
+                                  child: const Text('Yes'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    )
+                  : const Center(child: CircularProgressIndicator()),
             ),
             if (!keyboardOpen)
               Padding(
