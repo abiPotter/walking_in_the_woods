@@ -71,6 +71,7 @@ class _MapContainerState extends State<MapContainer> {
   StreamSubscription<List<Marker>>? _markerSubscription;
 
   FileCacheStore? _cacheStore;
+  bool _mapReady = false;
 
   @override
   void initState() {
@@ -171,6 +172,7 @@ class _MapContainerState extends State<MapContainer> {
                       LatLng(50.7219, -3.5330),
                   initialZoom: 14,
                   onMapReady: () {
+                    _mapReady = true;
                     // Force redraw once layout is complete
                     _mapController.move(
                       widget.initialLocation ??
@@ -328,8 +330,9 @@ class _MapContainerState extends State<MapContainer> {
           resolvedPosition == const LatLng(50.7219, -3.5330);
       _mapLoading = false;
     });
-
-    _mapController.move(resolvedPosition, 15);
+    if (_mapReady) {
+      _mapController.move(resolvedPosition, 15);
+    }
   }
 
   // ----------------- UI HELPERS ----------------
