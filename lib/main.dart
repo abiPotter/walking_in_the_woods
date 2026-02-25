@@ -15,48 +15,39 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'dart:async';
 
-void main() {
-  runZonedGuarded(
-    () async {
-      WidgetsFlutterBinding.ensureInitialized();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-      if (!kIsWeb) {
-        await dotenv.load(fileName: ".env"); // not running on web
-      }
+  if (!kIsWeb) {
+    await dotenv.load(fileName: ".env"); // not running on web
+  }
 
-      final supabaseUrl = kIsWeb
-          ? const String.fromEnvironment('SUPABASE_URL')
-          : dotenv.env['SUPABASE_URL'];
-      final supabaseKey = kIsWeb
-          ? const String.fromEnvironment('SUPABASE_ANONKEY')
-          : dotenv.env['SUPABASE_ANONKEY'];
+  final supabaseUrl = kIsWeb
+      ? const String.fromEnvironment('SUPABASE_URL')
+      : dotenv.env['SUPABASE_URL'];
+  final supabaseKey = kIsWeb
+      ? const String.fromEnvironment('SUPABASE_ANONKEY')
+      : dotenv.env['SUPABASE_ANONKEY'];
 
-      if (supabaseUrl == null ||
-          supabaseKey == null ||
-          supabaseUrl.isEmpty ||
-          supabaseKey.isEmpty) {
-        throw Exception("Supabase URL or Key not set");
-      }
+  if (supabaseUrl == null ||
+      supabaseKey == null ||
+      supabaseUrl.isEmpty ||
+      supabaseKey.isEmpty) {
+    throw Exception("Supabase URL or Key not set");
+  }
 
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
 
-      runApp(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => MapUiState()),
-            ChangeNotifierProvider(create: (_) => AdminState()),
-          ],
-          child: const MyApp(),
-        ),
-      );
-    },
-    (error, stack) {
-      debugPrint("Uncaught error in Flutter Web: $error\n$stack");
-    },
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => MapUiState()),
+        ChangeNotifierProvider(create: (_) => AdminState()),
+      ],
+      child: const MyApp(),
+    ),
   );
 }
 
