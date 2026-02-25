@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/helpers/states/admin_state.dart';
+import 'package:my_app/pages/admin_login_page.dart';
 import 'package:my_app/pages/report_page.dart';
 import 'package:my_app/pages/profile.dart';
 import 'package:my_app/pages/report_management_page.dart';
+import 'package:provider/provider.dart';
 
 import '../pages/home_page.dart';
 
@@ -39,12 +42,20 @@ class MainLayout extends StatelessWidget {
               context,
             ).push(MaterialPageRoute(builder: (_) => ProfilePage()));
           },
+          onLongPress: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminLoginPage()),
+            );
+          },
         ),
       ],
     );
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final isAdmin = Provider.of<AdminState>(context).isAdmin;
+
     return Drawer(
       child: Container(
         color: Colors.blue,
@@ -67,12 +78,13 @@ class MainLayout extends StatelessWidget {
               icon: Icons.report,
               page: ReportPage(),
             ),
-            _drawerItem(
-              context,
-              title: 'Admin',
-              icon: Icons.lock,
-              page: ReportManagementPage(),
-            ),
+            if (isAdmin)
+              _drawerItem(
+                context,
+                title: 'Admin',
+                icon: Icons.lock,
+                page: ReportManagementPage(),
+              ),
           ],
         ),
       ),

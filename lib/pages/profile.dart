@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:my_app/converters/report_status_converter.dart';
 import 'package:my_app/enums/report_status.dart';
 import 'package:my_app/helpers/handle_reports.dart';
+import 'package:my_app/helpers/states/admin_state.dart';
+import 'package:provider/provider.dart';
 
 import '../layout/main_layout.dart';
 import '../helpers/report_details.dart';
@@ -24,6 +26,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = Provider.of<AdminState>(context).isAdmin;
+
     return MainLayout(
       child: Center(
         child: Column(
@@ -33,12 +37,23 @@ class _ProfilePageState extends State<ProfilePage> {
               "Your reports",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+            if (!isAdmin)
+              const Text(
+                "You are currently using an anonymous account.\n"
+                "Reports you submit may not appear in your list if you reinstall the app or clear data.",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
             const SizedBox(height: 12),
             Row(
               children: [
                 SizedBox(width: 20),
                 Text("Filter: "),
-                SizedBox(width: 10),
+                SizedBox(width: 5),
                 DropdownButton<String>(
                   value: filter,
                   items: const [
@@ -59,15 +74,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   onChanged: (status) {
                     setState(() {
                       filter = status!;
+                      location = null;
                     });
                   },
                 ),
                 SizedBox(width: 15),
                 Text('Search: '),
-                SizedBox(width: 10),
+                SizedBox(width: 5),
                 SizedBox(
                   height: 40,
-                  width: 150,
+                  width: 140,
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.blue),

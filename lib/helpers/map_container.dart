@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:flutter_map_cache/flutter_map_cache.dart';
+
 import 'package:latlong2/latlong.dart';
-import 'package:my_app/helpers/map_ui_state.dart';
+import 'package:my_app/helpers/states/map_ui_state.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,6 +19,9 @@ import 'package:http/http.dart' as http;
 import '../enums/map_style.dart';
 import '../services/location_service.dart';
 import 'handle_reports.dart';
+
+import 'package:http_cache_file_store/http_cache_file_store.dart';
+import 'package:path_provider/path_provider.dart';
 
 class MapContainer extends StatefulWidget {
   final void Function(LatLng)? onLocationSelected;
@@ -65,6 +70,9 @@ class _MapContainerState extends State<MapContainer> {
   List<Marker> _otherReportsmarkers = [];
   StreamSubscription<List<Marker>>? _markerSubscription;
 
+  FileCacheStore? _cacheStore;
+  bool _mapReady = false;
+
   @override
   void initState() {
     super.initState();
@@ -86,21 +94,14 @@ class _MapContainerState extends State<MapContainer> {
           'https://api.maptiler.com/maps/landscape-v4/{z}/{x}/{y}.png?key=$mapApiKey',
       MapStyle.OpenStreetMap:
           'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=$mapApiKey',
-      MapStyle.Outdoor:
-          'https://api.maptiler.com/maps/outdoor-v4/{z}/{x}/{y}.png?key=$mapApiKey',
       MapStyle.Satellite:
           'https://api.maptiler.com/maps/hybrid-v4/{z}/{x}/{y}.jpg?key=$mapApiKey',
       MapStyle.Streets:
           'https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=$mapApiKey',
-      MapStyle.Toner:
-          'https://api.maptiler.com/maps/toner-v2/{z}/{x}/{y}.png?key=$mapApiKey',
-      MapStyle.Topo:
-          'https://api.maptiler.com/maps/topo-v4/256/{z}/{x}/{y}.png?key=$mapApiKey',
-      MapStyle.UK:
-          'https://api.maptiler.com/maps/uk-openzoomstack-road/{z}/{x}/{y}.png?key=$mapApiKey',
     };
 
     if (widget.initialLocation != null) {
+      _position = widget.initialLocation;
       _markers.add(
         Marker(
           width: 150,
@@ -115,11 +116,22 @@ class _MapContainerState extends State<MapContainer> {
         await _loadLocation();
       });
     }
-    if (mounted) {
-      setState(() {
-        _mapLoading = false;
-      });
+
+    _initCache();
+  }
+
+  Future<void> _initCache() async {
+    if (kIsWeb) {
+      setState(() => _cacheStore = null);
+      return;
     }
+    final store = await createCacheStore();
+    setState(() => _cacheStore = store);
+  }
+
+  Future<FileCacheStore> createCacheStore() async {
+    final dir = await getTemporaryDirectory();
+    return FileCacheStore('${dir.path}/flutter_map_tiles');
   }
 
   @override
@@ -133,6 +145,18 @@ class _MapContainerState extends State<MapContainer> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    if ((!kIsWeb && _cacheStore == null) || _mapLoading || _position == null) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 12),
+            Text('Getting your location...'),
+          ],
+        ),
+      );
+    }
 
     return Column(
       children: [
@@ -145,8 +169,18 @@ class _MapContainerState extends State<MapContainer> {
                   initialCenter:
                       widget.initialLocation ??
                       _position ??
-                      const LatLng(10, 10),
-                  initialZoom: 15,
+                      LatLng(50.7219, -3.5330),
+                  initialZoom: 14,
+                  onMapReady: () {
+                    _mapReady = true;
+                    // Force redraw once layout is complete
+                    _mapController.move(
+                      widget.initialLocation ??
+                          _position ??
+                          LatLng(50.7219, -3.5330),
+                      14,
+                    );
+                  },
                   onTap: (tapPosition, point) {
                     if (!widget.isShowingReportDetails) {
                       setState(() {
@@ -175,6 +209,12 @@ class _MapContainerState extends State<MapContainer> {
                     urlTemplate: mapStyles[currentStyle],
                     userAgentPackageName:
                         'com.undergrad_proj.walking_in_the_woods',
+                    tileProvider: kIsWeb
+                        ? NetworkTileProvider()
+                        : CachedTileProvider(
+                            store: _cacheStore!,
+                            maxStale: const Duration(days: 30),
+                          ),
                   ),
                   RichAttributionWidget(
                     attributions: [
@@ -273,18 +313,26 @@ class _MapContainerState extends State<MapContainer> {
       _mapLoading = true;
     });
 
-    LatLng resolvedPosition = await LocationService.loadLocation();
+    LatLng resolvedPosition;
+
+    try {
+      resolvedPosition = await LocationService.loadLocation();
+    } catch (e) {
+      // GPS denied or failed → fallback to Exeter
+      resolvedPosition = const LatLng(50.7219, -3.5330);
+    }
+
+    if (!mounted) return;
 
     setState(() {
       _position = resolvedPosition;
       _usingDefaultLocation =
-          resolvedPosition ==
-          LatLng(50.7219, -3.5330); //default location is Exeter
+          resolvedPosition == const LatLng(50.7219, -3.5330);
       _mapLoading = false;
     });
-
-    _mapController.move(resolvedPosition, 15);
-    setState(() => _mapLoading = false);
+    if (_mapReady) {
+      _mapController.move(resolvedPosition, 15);
+    }
   }
 
   // ----------------- UI HELPERS ----------------
@@ -464,7 +512,9 @@ class _MapContainerState extends State<MapContainer> {
                         padding: EdgeInsets.all(12),
                       ),
                       onPressed: () {
-                        setState(() => currentStyle = style);
+                        if (currentStyle != style) {
+                          setState(() => currentStyle = style);
+                        }
                         Navigator.pop(context);
                       },
                       child: Column(
@@ -496,14 +546,6 @@ class _MapContainerState extends State<MapContainer> {
         return Icons.terrain;
       case MapStyle.OpenStreetMap:
         return Icons.map;
-      case MapStyle.Outdoor:
-        return Icons.forest;
-      case MapStyle.Toner:
-        return Icons.contrast;
-      case MapStyle.Topo:
-        return Icons.layers;
-      case MapStyle.UK:
-        return Icons.flag;
     }
   }
 

@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:my_app/helpers/local_council_info.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -31,7 +32,7 @@ class _ReportPageState extends State<ReportPage> {
   DateTime? reportedDate;
   String? shortDescription;
   String longDescription = "";
-  List<XFile> _images = [];
+  final List<XFile> _images = [];
 
   final db = FirebaseFirestore.instance;
 
@@ -471,28 +472,34 @@ class _ReportPageState extends State<ReportPage> {
 
       await showDialog<bool>(
         context: context,
-        barrierDismissible: false, // user must choose
+        barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          title: const Text('Report Saved Successsfully'),
-          content: const Text(
-            'Do you want to return to the Home page or stay on this page?',
+          title: const Text(
+            'Report Saved Successfully',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 23),
+            textAlign: TextAlign.center,
           ),
+          content: LocalCouncilInfo().showLocalCouncilInfo(selectedLocation!),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => HomePage()),
-              ), // return home
-              child: const Text('Return Home'),
-            ),
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.of(
                 context,
-              ).push(MaterialPageRoute(builder: (_) => ReportPage())), // stay
-              child: const Text('Stay'),
+              ).push(MaterialPageRoute(builder: (_) => HomePage())),
+              icon: const Icon(Icons.home),
+              label: const Text('Home'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => ReportPage())),
+              icon: const Icon(Icons.edit),
+              label: const Text('Make another report'),
             ),
           ],
         ),
       );
+      if (!mounted) return;
     } catch (e) {
       // Handle errors
       ScaffoldMessenger.of(
