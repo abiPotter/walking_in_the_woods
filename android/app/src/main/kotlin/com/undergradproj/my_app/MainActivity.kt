@@ -1,4 +1,4 @@
-package com.undergradproj.my_app
+package com.undergradproj.roam_and_report
 
 import io.flutter.embedding.android.FlutterActivity
 

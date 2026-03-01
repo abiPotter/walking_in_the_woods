@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:my_app/layout/main_layout.dart';
 
 class PasswordPage extends StatefulWidget {
@@ -13,6 +15,9 @@ class PasswordPage extends StatefulWidget {
 class _PasswordPageState extends State<PasswordPage> {
   final TextEditingController controller = TextEditingController();
   bool incorrectPassword = false;
+  final String? adminPassword = kIsWeb
+      ? const String.fromEnvironment('ADMIN_PASSWORD')
+      : dotenv.env['ADMIN_PASSWORD'];
 
   @override
   void dispose() {
@@ -63,7 +68,7 @@ class _PasswordPageState extends State<PasswordPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (controller.text == "1234") {
+                if (controller.text == adminPassword) {
                   widget.onSuccess(); // telling parent to unlock
                 } else {
                   setState(() {

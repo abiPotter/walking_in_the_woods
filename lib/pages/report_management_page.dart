@@ -16,6 +16,8 @@ class ReportManagementPage extends StatefulWidget {
 class _ReportManagementState extends State<ReportManagementPage> {
   bool unlocked = false;
   String filter = "Likes";
+  String? filterItem;
+  bool isStatus = false;
   String? location;
 
   final TextEditingController _searchController = TextEditingController();
@@ -57,11 +59,29 @@ class _ReportManagementState extends State<ReportManagementPage> {
                       child: Text('Resolved'),
                     ),
                     DropdownMenuItem(value: 'Likes', child: Text('Likes')),
+                    DropdownMenuItem(
+                      value: 'Problem Type',
+                      child: Text('Problem type'),
+                    ),
                   ],
-                  onChanged: (status) {
+                  onChanged: (status) async {
+                    String? problemItem;
+                    if (status == 'Problem Type') {
+                      String? problem = await showProblemTypePicker(context);
+                      if (problem == null) {
+                        problemItem = 'Likes';
+                      } else {
+                        problemItem = problem;
+                      }
+                      isStatus = false;
+                    } else {
+                      isStatus = true;
+                      problemItem = status;
+                    }
                     setState(() {
                       filter = status!;
                       location = null;
+                      filterItem = problemItem;
                     });
                   },
                 ),
@@ -108,7 +128,8 @@ class _ReportManagementState extends State<ReportManagementPage> {
               child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: HandleReports.getAllReportsStream(
                   null,
-                  ReportStatusConverter.stringToReportStatus(filter),
+                  isStatus,
+                  filterItem,
                   location,
                 ),
                 builder: ((context, snapshot) {
@@ -246,5 +267,46 @@ class _ReportManagementState extends State<ReportManagementPage> {
       filter = "Likes";
       location = query;
     });
+  }
+
+  Future<String?> showProblemTypePicker(BuildContext context) async {
+    List<String> possibleProblems = [
+      "Blocked/overgrown footpath",
+      "Damaged footpath",
+      "Slippery footpath",
+      "Locked gate",
+      "Poor signage",
+      "Poor visibility",
+      "Safety hazard",
+      "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
+      "Flooding",
+      "Temporary closure",
+      "Farm/wildlife disruption",
+    ];
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Select problem to filter by"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...possibleProblems.map(
+                  (problem) => TextButton(
+                    onPressed: () {
+                      Navigator.pop(context, problem); // return selected value
+                    },
+                    child: Text(problem),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

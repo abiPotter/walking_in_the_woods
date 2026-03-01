@@ -6,12 +6,23 @@
 .DS_Store
 .atom/
 .build/
+/build/
 .buildlog/
 .history
 .svn/
 .swiftpm/
 migrate_working_dir/
 .env
+key.properties
+
+# android deployment
+/output_apks/
+/*.apk
+/android/app/*.apk
+/*.aab
+/android/app/*.aab
+/*.apks
+/android/app/*.apks
 
 # IntelliJ related
 *.iml
