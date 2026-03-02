@@ -9,9 +9,14 @@ import 'package:my_app/helpers/report_details.dart';
 class HandleReports {
   static Stream<List<Map<String, dynamic>>> getAllReportsStream(
     String? userid,
-    ReportStatus status,
+    bool isStatus,
+    String? filter,
     String? location,
   ) {
+    ReportStatus? status;
+    if (isStatus) {
+      status = ReportStatusConverter.stringToReportStatus(filter!);
+    }
     if (location != null) {
       location = location.toLowerCase().trim();
     }
@@ -43,7 +48,15 @@ class HandleReports {
             .orderBy('date', descending: true)
             .snapshots();
       } else {
-        if (location != null) {
+        if (filter != 'Likes' && filter != 'Date') {
+          //filter by description type
+          reportSnapshots = FirebaseFirestore.instance
+              .collection('reports')
+              .where('description', isEqualTo: filter)
+              .orderBy('likes', descending: true)
+              .orderBy('date', descending: true)
+              .snapshots();
+        } else if (location != null) {
           //find reports containing location name
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
@@ -87,7 +100,16 @@ class HandleReports {
             .orderBy('date', descending: true)
             .snapshots();
       } else {
-        if (location != null) {
+        if (filter != 'Date') {
+          //filter by description type
+          reportSnapshots = FirebaseFirestore.instance
+              .collection('reports')
+              .where('userid', isEqualTo: userid)
+              .where('description', isEqualTo: filter)
+              .orderBy('likes', descending: true)
+              .orderBy('date', descending: true)
+              .snapshots();
+        } else if (location != null) {
           //find reports containing location name
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
@@ -158,7 +180,7 @@ class HandleReports {
   }
 
   static Stream<List<Marker>> getReportMarkers(BuildContext context) {
-    return getAllReportsStream(null, ReportStatus.Unknown, null).map((reports) {
+    return getAllReportsStream(null, false, 'Date', null).map((reports) {
       return reports.map((report) {
         final lat = report['latitude'];
         final lng = report['longitude'];

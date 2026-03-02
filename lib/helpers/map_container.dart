@@ -47,8 +47,8 @@ class MapContainer extends StatefulWidget {
 
 class _MapContainerState extends State<MapContainer> {
   final String? mapApiKey = kIsWeb
-      ? const String.fromEnvironment('MAPTILER_API_KEY')
-      : dotenv.env['MAPTILER_API_KEY'];
+      ? const String.fromEnvironment('MAPTILER_API_KEY2')
+      : dotenv.env['MAPTILER_API_KEY2'];
 
   late final Map<MapStyle, String> mapStyles;
   MapStyle currentStyle = MapStyle.OpenStreetMap;
@@ -170,16 +170,18 @@ class _MapContainerState extends State<MapContainer> {
                       widget.initialLocation ??
                       _position ??
                       LatLng(50.7219, -3.5330),
-                  initialZoom: 14,
+                  initialZoom: 15,
                   onMapReady: () {
                     _mapReady = true;
                     // Force redraw once layout is complete
-                    _mapController.move(
-                      widget.initialLocation ??
-                          _position ??
-                          LatLng(50.7219, -3.5330),
-                      14,
-                    );
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _mapController.move(
+                        widget.initialLocation ??
+                            _position ??
+                            const LatLng(50.7219, -3.5330),
+                        15,
+                      );
+                    });
                   },
                   onTap: (tapPosition, point) {
                     if (!widget.isShowingReportDetails) {
@@ -207,8 +209,7 @@ class _MapContainerState extends State<MapContainer> {
                 children: [
                   TileLayer(
                     urlTemplate: mapStyles[currentStyle],
-                    userAgentPackageName:
-                        'com.undergrad_proj.walking_in_the_woods',
+                    userAgentPackageName: 'com.undergrad_proj.roam_and_report',
                     tileProvider: kIsWeb
                         ? NetworkTileProvider()
                         : CachedTileProvider(

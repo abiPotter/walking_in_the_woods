@@ -20,6 +20,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final userid = FirebaseAuth.instance.currentUser!.uid;
 
   String filter = "Date";
+  String? filterItem;
+  bool isStatus = false;
   String? location;
 
   final TextEditingController _searchController = TextEditingController();
@@ -70,11 +72,29 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Text('Resolved'),
                     ),
                     DropdownMenuItem(value: 'Date', child: Text('Date')),
+                    DropdownMenuItem(
+                      value: 'Problem Type',
+                      child: Text('Problem type'),
+                    ),
                   ],
-                  onChanged: (status) {
+                  onChanged: (status) async {
+                    String? problemItem;
+                    if (status == 'Problem Type') {
+                      String? problem = await showProblemTypePicker(context);
+                      if (problem == null) {
+                        problemItem = 'Date';
+                      } else {
+                        problemItem = problem;
+                      }
+                      isStatus = false;
+                    } else {
+                      isStatus = true;
+                      problemItem = status;
+                    }
                     setState(() {
                       filter = status!;
                       location = null;
+                      filterItem = problemItem;
                     });
                   },
                 ),
@@ -122,7 +142,8 @@ class _ProfilePageState extends State<ProfilePage> {
               child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: HandleReports.getAllReportsStream(
                   userid,
-                  ReportStatusConverter.stringToReportStatus(filter),
+                  isStatus,
+                  filterItem,
                   location,
                 ),
                 builder: ((context, snapshot) {
@@ -260,5 +281,46 @@ class _ProfilePageState extends State<ProfilePage> {
       filter = "Date";
       location = query;
     });
+  }
+
+  Future<String?> showProblemTypePicker(BuildContext context) async {
+    List<String> possibleProblems = [
+      "Blocked/overgrown footpath",
+      "Damaged footpath",
+      "Slippery footpath",
+      "Locked gate",
+      "Poor signage",
+      "Poor visibility",
+      "Safety hazard",
+      "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
+      "Flooding",
+      "Temporary closure",
+      "Farm/wildlife disruption",
+    ];
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Select problem to filter by"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...possibleProblems.map(
+                  (problem) => TextButton(
+                    onPressed: () {
+                      Navigator.pop(context, problem); // return selected value
+                    },
+                    child: Text(problem),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
