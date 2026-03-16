@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:roam_and_report/services/report_provider.dart';
+import 'package:roam_and_report/widgets/report_details.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../helpers/map_container.dart';
+import '../widgets/map_container.dart';
 import '../helpers/states/map_ui_state.dart';
 import '../layout/main_layout.dart';
 
@@ -137,6 +139,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final keyboardOpen = context.watch<MapUiState>().keyboardOpen;
+    final reports = ReportProvider().getAllReports();
 
     return MainLayout(
       child: SingleChildScrollView(
@@ -146,10 +149,22 @@ class _HomePageState extends State<HomePage> {
               height: MediaQuery.of(context).size.height * 0.8,
               child: _canLoadMap
                   ? MapContainer(
+                      allReports: reports,
                       showReportsToggle: true,
                       showSearchBar: true,
                       showRecentre: true,
                       isShowingReportDetails: false,
+                      onMarkerTap: (report) {
+                        showDialog(
+                          context: context,
+                          builder: (_) => ReportDetails(
+                            report: report,
+                            isOnReportManagement: false,
+                            isOnUserProfile: false,
+                            onStatusChanged: () {},
+                          ),
+                        );
+                      },
                       onLocationSelected: (latLng) {
                         showDialog(
                           context: context,

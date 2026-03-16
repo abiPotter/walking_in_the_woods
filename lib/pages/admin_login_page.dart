@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:my_app/helpers/states/admin_state.dart';
-import 'package:my_app/layout/main_layout.dart';
+import 'package:roam_and_report/helpers/states/admin_state.dart';
+import 'package:roam_and_report/layout/main_layout.dart';
 import 'package:provider/provider.dart';
 
 class AdminLoginPage extends StatefulWidget {

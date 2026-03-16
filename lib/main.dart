@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:my_app/helpers/states/admin_state.dart';
-import 'package:my_app/pages/home_page.dart';
+import 'package:roam_and_report/helpers/states/admin_state.dart';
+import 'package:roam_and_report/pages/home_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

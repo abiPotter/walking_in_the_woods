@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/converters/report_status_converter.dart';
-import 'package:my_app/enums/report_status.dart';
-import 'package:my_app/helpers/handle_reports.dart';
-import 'package:my_app/helpers/report_details.dart';
-import 'package:my_app/pages/password_page.dart';
+import 'package:roam_and_report/pages/password_page.dart';
+import 'package:roam_and_report/widgets/reports_list.dart';
 import '../layout/main_layout.dart';
 
 class ReportManagementPage extends StatefulWidget {
@@ -125,140 +122,18 @@ class _ReportManagementState extends State<ReportManagementPage> {
               ],
             ),
             Expanded(
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: HandleReports.getAllReportsStream(
-                  null,
-                  isStatus,
-                  filterItem,
-                  location,
-                ),
-                builder: ((context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  }
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final userReports = snapshot.data ?? [];
-
-                  if (userReports.isEmpty) {
-                    if (location != null) {
-                      return const Text(
-                        "Cannot find any reports with that location",
-                      );
-                    }
-                    if (filter == 'Likes') {
-                      return const Text(
-                        "There has not been any submitted reports yet",
-                      );
-                    }
-                    return const Text(
-                      "You have not got any reports under this filter",
-                    );
-                  }
-                  return ListView.builder(
-                    itemCount: userReports.length,
-                    itemBuilder: (context, index) {
-                      final reportData = userReports[index];
-                      return Container(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: getReportColour(reportData),
-                          border: Border.all(color: Colors.blueAccent),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          title: Text(
-                            reportData['description'],
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(height: 8),
-                              Text(reportData['location text']),
-                              SizedBox(height: 8),
-                              Text.rich(
-                                TextSpan(
-                                  children: [
-                                    const TextSpan(
-                                      text: 'Reported on: ',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: reportData['date']
-                                          .toDate()
-                                          .toString()
-                                          .split(' ')[0],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text.rich(
-                                TextSpan(
-                                  children: [
-                                    const TextSpan(
-                                      text: 'Status: ',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          ReportStatusConverter.reportStatusToString(
-                                            reportData['status'],
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          onTap: () => ReportDetails().showDetails(
-                            context,
-                            reportData,
-                            true,
-                            false,
-                            onStatusChanged: () {
-                              setState(() {});
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }),
+              child: ReportsList(
+                userid: null,
+                isStatus: isStatus,
+                filterItem: filterItem,
+                location: location,
+                isOnReportManagement: true,
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Color getReportColour(Map<String, dynamic> report) {
-    ReportStatus status = report['status'];
-    if (status == ReportStatus.Submitted) {
-      return Colors.red.shade200;
-    } else if (status == ReportStatus.InProgress) {
-      return Colors.amber.shade200;
-    } else if (status == ReportStatus.Resolved) {
-      return Colors.green.shade200;
-    }
-    return Colors.white;
   }
 
   Future<void> searchReportsInLocation(String query) async {

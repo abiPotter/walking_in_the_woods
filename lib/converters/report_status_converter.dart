@@ -1,4 +1,4 @@
-import 'package:my_app/enums/report_status.dart';
+import 'package:roam_and_report/enums/report_status.dart';
 
 class ReportStatusConverter {
   static String reportStatusToString(ReportStatus status) {

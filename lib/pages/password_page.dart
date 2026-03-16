@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:my_app/layout/main_layout.dart';
+import 'package:roam_and_report/layout/main_layout.dart';
 
 class PasswordPage extends StatefulWidget {
   final VoidCallback onSuccess;

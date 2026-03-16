@@ -7,12 +7,12 @@ import 'package:flutter/services.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:my_app/helpers/local_council_info.dart';
+import 'package:roam_and_report/helpers/local_council_info.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:http/http.dart' as http;
 
-import '../helpers/map_container.dart';
+import '../widgets/map_container.dart';
 import '../layout/main_layout.dart';
 import 'home_page.dart';
 import '../enums/report_status.dart';
