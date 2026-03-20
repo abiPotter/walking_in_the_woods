@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helpers/states/admin_state.dart';
-import 'package:my_app/pages/admin_login_page.dart';
-import 'package:my_app/pages/report_page.dart';
-import 'package:my_app/pages/profile.dart';
-import 'package:my_app/pages/report_management_page.dart';
+import 'package:roam_and_report/helpers/states/admin_state.dart';
+import 'package:roam_and_report/pages/admin_login_page.dart';
+import 'package:roam_and_report/pages/report_page.dart';
+import 'package:roam_and_report/pages/profile.dart';
+import 'package:roam_and_report/pages/report_management_page.dart';
 import 'package:provider/provider.dart';
 
 import '../pages/home_page.dart';
@@ -62,8 +62,16 @@ class MainLayout extends StatelessWidget {
         child: ListView(
           children: [
             DrawerHeader(
-              child: Center(
-                child: Text('Menu', style: TextStyle(fontSize: 20)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset('assets/logo.png', width: 90),
+                  SizedBox(height: 10),
+                  Text(
+                    'Menu',
+                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
             ),
             _drawerItem(

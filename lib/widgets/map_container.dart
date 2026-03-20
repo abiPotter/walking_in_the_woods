@@ -8,7 +8,8 @@ import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_map_cache/flutter_map_cache.dart';
 
 import 'package:latlong2/latlong.dart';
-import 'package:my_app/helpers/states/map_ui_state.dart';
+import 'package:roam_and_report/helpers/states/map_ui_state.dart';
+import 'package:roam_and_report/models/report_model.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -18,7 +19,6 @@ import 'package:http/http.dart' as http;
 
 import '../enums/map_style.dart';
 import '../services/location_service.dart';
-import 'handle_reports.dart';
 
 import 'package:http_cache_file_store/http_cache_file_store.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,15 +26,19 @@ import 'package:path_provider/path_provider.dart';
 class MapContainer extends StatefulWidget {
   final void Function(LatLng)? onLocationSelected;
   final LatLng? initialLocation;
+  final Stream<List<ReportModel>>? allReports;
   final bool showReportsToggle;
   final bool showSearchBar;
   final bool showRecentre;
   final bool isShowingReportDetails;
+  final void Function(ReportModel report)? onMarkerTap;
 
   const MapContainer({
     super.key,
     this.onLocationSelected,
     this.initialLocation,
+    this.allReports,
+    this.onMarkerTap,
     required this.showReportsToggle,
     required this.showSearchBar,
     required this.showRecentre,
@@ -78,13 +82,12 @@ class _MapContainerState extends State<MapContainer> {
     super.initState();
 
     if (widget.showReportsToggle) {
-      _markerSubscription = HandleReports.getReportMarkers(context).listen((
-        markers,
-      ) {
-        setState(() {
-          _otherReportsmarkers = List.from(markers);
-        });
-      });
+      _markerSubscription = _getReportMarkers(context, widget.allReports!)
+          .listen((markers) {
+            setState(() {
+              _otherReportsmarkers = List.from(markers);
+            });
+          });
     } else {
       showOtherReports = false;
     }
@@ -571,6 +574,36 @@ class _MapContainerState extends State<MapContainer> {
         );
       },
     );
+  }
+
+  Stream<List<Marker>> _getReportMarkers(
+    BuildContext context,
+    Stream<List<ReportModel>> allReports,
+  ) {
+    return allReports.map((reports) {
+      return reports.map((report) {
+        final lat = report.latitude;
+        final lng = report.longitude;
+
+        return Marker(
+          width: 40,
+          height: 40,
+          point: LatLng(lat, lng),
+          child: GestureDetector(
+            onTap: () {
+              if (widget.onMarkerTap != null) {
+                widget.onMarkerTap!(report);
+              }
+            },
+            child: const Icon(
+              Icons.location_on,
+              color: Colors.purple,
+              size: 35,
+            ),
+          ),
+        );
+      }).toList();
+    });
   }
 
   // --------------------- LOGIC ---------------

@@ -1,20 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:my_app/converters/report_status_converter.dart';
-import 'package:my_app/enums/report_status.dart';
-import 'package:my_app/helpers/report_details.dart';
+import 'package:roam_and_report/converters/report_status_converter.dart';
+import 'package:roam_and_report/enums/report_status.dart';
+import 'package:roam_and_report/models/report_model.dart';
+import 'package:roam_and_report/models/vote_result.dart';
 
 class HandleReports {
-  static Stream<List<Map<String, dynamic>>> getAllReportsStream(
+  static Stream<List<ReportModel>> getAllReportsStream(
     String? userid,
-    bool isStatus,
+    bool filterByStatus,
     String? filter,
     String? location,
   ) {
     ReportStatus? status;
-    if (isStatus) {
+    if (filterByStatus) {
       status = ReportStatusConverter.stringToReportStatus(filter!);
     }
     if (location != null) {
@@ -149,29 +148,29 @@ class HandleReports {
                 .map((doc) {
                   final data = doc.data();
 
-                  return {
-                    'id': doc.id,
-                    'userid': data['userid'],
-                    'latitude': data['latitude'],
-                    'longitude': data['longitude'],
-                    'date': data['date'], // keep Timestamp
-                    'description': data['description'] ?? '',
-                    'long description': data['long description'] ?? '',
-                    'photos': data['photos'] ?? [],
-                    'likes': data['likes'] ?? 0,
-                    'dislikes': data['dislikes'] ?? 0,
-                    'votes': Map<String, dynamic>.from(data['votes'] ?? {}),
-                    'location text': data['location text'] ?? '',
-                    'status': ReportStatusConverter.enumStringToReportStatus(
+                  return ReportModel(
+                    id: doc.id,
+                    userId: data['userid'],
+                    latitude: data['latitude'],
+                    longitude: data['longitude'],
+                    date: data['date'].toDate(), // keep Timestamp
+                    description: data['description'] ?? '',
+                    longDescription: data['long description'] ?? '',
+                    photos: List<String>.from(data['photos'] ?? []),
+                    likes: data['likes'] ?? 0,
+                    dislikes: data['dislikes'] ?? 0,
+                    votes: Map<String, String>.from(data['votes'] ?? {}),
+                    locationText: data['location text'] ?? '',
+                    status: ReportStatusConverter.enumStringToReportStatus(
                       data['status'],
                     ),
-                  };
+                  );
                 })
                 .toList();
           } catch (e, stack) {
             debugPrint('Error mapping reports: $e');
             debugPrint('$stack');
-            return <Map<String, dynamic>>[];
+            return <ReportModel>[];
           }
         })
         .handleError((error) {
@@ -179,32 +178,57 @@ class HandleReports {
         });
   }
 
-  static Stream<List<Marker>> getReportMarkers(BuildContext context) {
-    return getAllReportsStream(null, false, 'Date', null).map((reports) {
-      return reports.map((report) {
-        final lat = report['latitude'];
-        final lng = report['longitude'];
+  static String getOppositeVote(String voteChoice) {
+    if (voteChoice == 'likes') {
+      return 'dislikes';
+    } else {
+      return 'likes';
+    }
+  }
 
-        return Marker(
-          width: 40,
-          height: 40,
-          point: LatLng(lat, lng),
-          child: GestureDetector(
-            onTap: () => ReportDetails().showDetails(
-              context,
-              report,
-              false,
-              false,
-              onStatusChanged: () {},
-            ),
-            child: const Icon(
-              Icons.location_on,
-              color: Colors.purple,
-              size: 35,
-            ),
-          ),
-        );
-      }).toList();
-    });
+  static Future<VoteResult> voteOnReportWithDifferentVote(
+    ReportModel report,
+    Map<String, String> votes,
+    String voteChoice,
+    String userid,
+  ) async {
+    votes[userid] = voteChoice;
+    final oppositeVote = getOppositeVote(voteChoice);
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(report.id)
+        .update({
+          voteChoice: FieldValue.increment(1),
+          'votes': votes,
+          oppositeVote: FieldValue.increment(-1),
+        });
+    return VoteResult(true, true);
+  }
+
+  static Future<VoteResult> voteOnReport(
+    ReportModel report,
+    Map<String, String> votes,
+    String voteChoice,
+    String userid,
+  ) async {
+    //not voted on this report before
+    votes[userid] = voteChoice;
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(report.id)
+        .update({voteChoice: FieldValue.increment(1), 'votes': votes});
+
+    return VoteResult(true, false);
+  }
+
+  static void updateStatus(ReportModel report, String newStatus) async {
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(report.id)
+        .update({'status': newStatus});
+  }
+
+  static void deleteReport(String id) async {
+    await FirebaseFirestore.instance.collection('reports').doc(id).delete();
   }
 }
