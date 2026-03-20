@@ -40,6 +40,8 @@ class _ReportDetailsState extends State<ReportDetails> {
   late bool isOnUserProfile;
   late VoidCallback onStatusChanged;
 
+  bool showLikeInfo = false;
+
   @override
   void initState() {
     super.initState();
@@ -133,6 +135,14 @@ class _ReportDetailsState extends State<ReportDetails> {
                           Text(report.dislikes.toString()),
                         ],
                       ),
+                      IconButton(
+                        icon: Icon(Icons.info_outline, size: 20),
+                        onPressed: () => {
+                          setState(() {
+                            showLikeInfo = !showLikeInfo;
+                          }),
+                        },
+                      ),
                       if (isOnReportManagement) SizedBox(width: 20),
                       if (isOnReportManagement)
                         Column(
@@ -180,6 +190,53 @@ class _ReportDetailsState extends State<ReportDetails> {
                         ),
                     ],
                   ),
+                  if (showLikeInfo) SizedBox(height: 5),
+                  if (showLikeInfo)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white, // clean background
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.shade300, // subtle border
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.thumb_up,
+                                size: 18,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: 6),
+                              Text("Confirm issue still exists"),
+                            ],
+                          ),
+                          SizedBox(height: 6),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.thumb_down,
+                                size: 18,
+                                color: Colors.red,
+                              ),
+                              SizedBox(width: 6),
+                              Text("Issue no longer a problem"),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   SizedBox(height: 8),
                   Text(report.locationText),
                   SizedBox(
@@ -248,6 +305,24 @@ class _ReportDetailsState extends State<ReportDetails> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(
+                          text: 'Severity: ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextSpan(
+                          text: report.severity,
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     'Photos: ',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -291,17 +366,15 @@ class _ReportDetailsState extends State<ReportDetails> {
                             fontStyle: FontStyle.italic,
                           ),
                         ),
-                  if (isOnReportManagement || isOnUserProfile)
-                    SizedBox(height: 8),
-                  if (isOnReportManagement || isOnUserProfile)
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.apartment),
-                      label: const Text("Local Council Information"),
-                      onPressed: () => showLocalCouncilInfo(
-                        context,
-                        LatLng(report.latitude, report.longitude),
-                      ),
+                  SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.apartment),
+                    label: const Text("Local Council Information"),
+                    onPressed: () => showLocalCouncilInfo(
+                      context,
+                      LatLng(report.latitude, report.longitude),
                     ),
+                  ),
                 ],
               ),
             ),

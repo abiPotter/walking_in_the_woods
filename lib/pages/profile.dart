@@ -16,7 +16,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final userid = FirebaseAuth.instance.currentUser!.uid;
 
-  String filter = "Date";
+  String filter = "All";
   String? filterItem;
   bool isStatus = false;
   String? location;
@@ -47,14 +47,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 textAlign: TextAlign.center,
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Row(
               children: [
-                SizedBox(width: 20),
+                SizedBox(width: 12),
                 Text("Filter: "),
                 SizedBox(width: 5),
                 DropdownButton<String>(
                   value: filter,
+                  isDense: true,
                   items: const [
                     DropdownMenuItem(
                       value: 'Submitted',
@@ -68,7 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       value: 'Resolved',
                       child: Text('Resolved'),
                     ),
-                    DropdownMenuItem(value: 'Date', child: Text('Date')),
+                    DropdownMenuItem(value: 'All', child: Text('All Active')),
                     DropdownMenuItem(
                       value: 'Problem Type',
                       child: Text('Problem type'),
@@ -79,7 +80,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (status == 'Problem Type') {
                       String? problem = await showProblemTypePicker(context);
                       if (problem == null) {
-                        problemItem = 'Date';
+                        problemItem = 'All';
                       } else {
                         problemItem = problem;
                       }
@@ -95,43 +96,46 @@ class _ProfilePageState extends State<ProfilePage> {
                     });
                   },
                 ),
-                SizedBox(width: 15),
+                SizedBox(width: 12),
                 Text('Search: '),
                 SizedBox(width: 5),
-                SizedBox(
-                  height: 40,
-                  width: 140,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blue),
-                      borderRadius: BorderRadius.circular(20),
-                      color: Colors.white,
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(width: 8),
-                        const Icon(Icons.search),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            cursorColor: Colors.black,
-                            keyboardType: TextInputType.text,
-                            textInputAction: TextInputAction.go,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 15,
-                                vertical: 10,
+                Expanded(
+                  child: SizedBox(
+                    height: 38,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white,
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(width: 8),
+                          const Icon(Icons.search),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              cursorColor: Colors.black,
+                              keyboardType: TextInputType.text,
+                              textInputAction: TextInputAction.go,
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                  vertical: 10,
+                                ),
+                                hintText: "Search...",
                               ),
-                              hintText: "Search...",
+                              onSubmitted: searchReportsInLocation,
                             ),
-                            onSubmitted: searchReportsInLocation,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
+
+                const SizedBox(width: 10),
               ],
             ),
             const SizedBox(height: 12),
@@ -153,7 +157,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> searchReportsInLocation(String query) async {
     setState(() {
       _searchController.clear();
-      filter = "Date";
+      filter = "All";
       location = query;
     });
   }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:roam_and_report/converters/report_status_converter.dart';
@@ -28,23 +30,23 @@ class HandleReports {
         reportSnapshots = FirebaseFirestore.instance
             .collection('reports')
             .where('status', isEqualTo: ReportStatus.Submitted.toString())
-            .orderBy('likes', descending: true)
-            .orderBy('date', descending: true)
+            //.orderBy('likes', descending: true)
+            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.InProgress) {
         //only retrieve in progress reports
         reportSnapshots = FirebaseFirestore.instance
             .collection('reports')
             .where('status', isEqualTo: ReportStatus.InProgress.toString())
-            .orderBy('likes', descending: true)
-            .orderBy('date', descending: true)
+            //.orderBy('likes', descending: true)
+            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.Resolved) {
         reportSnapshots = FirebaseFirestore.instance
             .collection('reports')
             .where('status', isEqualTo: ReportStatus.Resolved.toString())
-            .orderBy('likes', descending: true)
-            .orderBy('date', descending: true)
+            //.orderBy('likes', descending: true)
+            //.orderBy('date', descending: true)
             .snapshots();
       } else {
         if (filter != 'Likes' && filter != 'Date') {
@@ -52,24 +54,24 @@ class HandleReports {
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('description', isEqualTo: filter)
-              .orderBy('likes', descending: true)
-              .orderBy('date', descending: true)
+              //.orderBy('likes', descending: true)
+              //.orderBy('date', descending: true)
               .snapshots();
         } else if (location != null) {
           //find reports containing location name
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('location keywords', arrayContains: location.split(' ')[0])
-              .orderBy('likes', descending: true)
-              .orderBy('date', descending: true)
+              //.orderBy('likes', descending: true)
+              //.orderBy('date', descending: true)
               .snapshots();
         } else {
           //order by likes followed by date for default report management. Does not show resolved reports
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('status', isNotEqualTo: ReportStatus.Resolved.toString())
-              .orderBy('likes', descending: true)
-              .orderBy('date', descending: true)
+              //.orderBy('likes', descending: true)
+              //.orderBy('date', descending: true)
               .snapshots();
         }
       }
@@ -81,7 +83,7 @@ class HandleReports {
             .collection('reports')
             .where('userid', isEqualTo: userid)
             .where('status', isEqualTo: ReportStatus.Submitted.toString())
-            .orderBy('date', descending: true)
+            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.InProgress) {
         //only retrieve in progress reports
@@ -89,7 +91,7 @@ class HandleReports {
             .collection('reports')
             .where('userid', isEqualTo: userid)
             .where('status', isEqualTo: ReportStatus.InProgress.toString())
-            .orderBy('date', descending: true)
+            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.Resolved) {
         reportSnapshots = FirebaseFirestore.instance
@@ -99,14 +101,14 @@ class HandleReports {
             .orderBy('date', descending: true)
             .snapshots();
       } else {
-        if (filter != 'Date') {
+        if (filter != 'All') {
           //filter by description type
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('userid', isEqualTo: userid)
               .where('description', isEqualTo: filter)
-              .orderBy('likes', descending: true)
-              .orderBy('date', descending: true)
+              //.orderBy('likes', descending: true)
+              //.orderBy('date', descending: true)
               .snapshots();
         } else if (location != null) {
           //find reports containing location name
@@ -114,15 +116,15 @@ class HandleReports {
               .collection('reports')
               .where('userid', isEqualTo: userid)
               .where('location keywords', arrayContains: location.split(' ')[0])
-              .orderBy('likes', descending: true)
-              .orderBy('date', descending: true)
+              //.orderBy('likes', descending: true)
+              //.orderBy('date', descending: true)
               .snapshots();
         } else {
           //filter by user and order by date for default profile page
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('userid', isEqualTo: userid)
-              .orderBy('date', descending: true)
+              //.orderBy('date', descending: true)
               .snapshots();
         }
       }
@@ -148,25 +150,14 @@ class HandleReports {
                 .map((doc) {
                   final data = doc.data();
 
-                  return ReportModel(
-                    id: doc.id,
-                    userId: data['userid'],
-                    latitude: data['latitude'],
-                    longitude: data['longitude'],
-                    date: data['date'].toDate(), // keep Timestamp
-                    description: data['description'] ?? '',
-                    longDescription: data['long description'] ?? '',
-                    photos: List<String>.from(data['photos'] ?? []),
-                    likes: data['likes'] ?? 0,
-                    dislikes: data['dislikes'] ?? 0,
-                    votes: Map<String, String>.from(data['votes'] ?? {}),
-                    locationText: data['location text'] ?? '',
-                    status: ReportStatusConverter.enumStringToReportStatus(
-                      data['status'],
-                    ),
-                  );
+                  return convertToReportModel(data, doc.id);
                 })
-                .toList();
+                .toList()
+              ..sort((report1, report2) {
+                final report1score = calculatePriorityScore(report1);
+                final report2score = calculatePriorityScore(report2);
+                return report2score.compareTo(report1score); // descending
+              });
           } catch (e, stack) {
             debugPrint('Error mapping reports: $e');
             debugPrint('$stack');
@@ -176,6 +167,38 @@ class HandleReports {
         .handleError((error) {
           debugPrint('Firestore stream error: $error');
         });
+  }
+
+  static ReportModel convertToReportModel(Map<String, dynamic> data, id) {
+    return ReportModel(
+      id: id,
+      userId: data['userid'],
+      latitude: data['latitude'],
+      longitude: data['longitude'],
+      date: data['date'].toDate(), // keep Timestamp
+      description: data['description'] ?? '',
+      longDescription: data['long description'] ?? '',
+      photos: List<String>.from(data['photos'] ?? []),
+      likes: data['likes'] ?? 0,
+      dislikes: data['dislikes'] ?? 0,
+      votes: Map<String, String>.from(data['votes'] ?? {}),
+      locationText: data['location text'] ?? '',
+      status: ReportStatusConverter.enumStringToReportStatus(data['status']),
+      severity: data['severity'] ?? "No severity provided",
+    );
+  }
+
+  static double calculatePriorityScore(ReportModel report) {
+    final severity = int.tryParse(report.severity) ?? 0;
+    final ageInDays = DateTime.now().difference(report.date).inDays.toDouble();
+    final upVotes = report.likes.toDouble();
+    final downVotes = report.dislikes.toDouble();
+
+    //severity should dominate
+    //add decay to age
+    return (severity * 3) +
+        (log(ageInDays + 1) * 0.5) +
+        ((upVotes - downVotes) * 1.2);
   }
 
   static String getOppositeVote(String voteChoice) {
@@ -230,5 +253,25 @@ class HandleReports {
 
   static void deleteReport(String id) async {
     await FirebaseFirestore.instance.collection('reports').doc(id).delete();
+  }
+
+  static Future<DocumentReference<Map<String, dynamic>>> saveReport(
+    Map<String, dynamic> report,
+  ) async {
+    return await FirebaseFirestore.instance.collection("reports").add(report);
+  }
+
+  static void updateSeverity(ReportModel report, String newSeverity) async {
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(report.id)
+        .update({'severity': newSeverity});
+  }
+
+  static void updatePhotos(ReportModel report, List<String> newPhotos) async {
+    await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(report.id)
+        .update({'photos': FieldValue.arrayUnion(newPhotos)});
   }
 }

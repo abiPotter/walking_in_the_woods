@@ -14,6 +14,7 @@ class ReportModel {
   final Map<String, String> votes; // userid -> 'likes'/'dislikes'
   final String locationText;
   ReportStatus status;
+  final String severity;
 
   ReportModel({
     required this.id,
@@ -29,6 +30,7 @@ class ReportModel {
     required this.votes,
     required this.locationText,
     required this.status,
+    required this.severity,
   });
 
   ReportModel copyWith({
@@ -45,6 +47,7 @@ class ReportModel {
     Map<String, String>? votes,
     String? locationText,
     ReportStatus? status,
+    String? severity,
   }) {
     return ReportModel(
       id: id ?? this.id,
@@ -60,6 +63,7 @@ class ReportModel {
       votes: votes ?? this.votes,
       locationText: locationText ?? this.locationText,
       status: status ?? this.status,
+      severity: severity ?? this.severity,
     );
   }
 }

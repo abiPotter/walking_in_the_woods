@@ -83,7 +83,7 @@ class ReportProvider extends ChangeNotifier {
   }
 
   //Utility
-  static Color getReportColour(ReportModel report) {
+  static Color getReportColour1(ReportModel report) {
     ReportStatus status = report.status;
     if (status == ReportStatus.Submitted) {
       return Colors.red.shade200;
@@ -93,5 +93,26 @@ class ReportProvider extends ChangeNotifier {
       return Colors.green.shade200;
     }
     return Colors.white;
+  }
+
+  static Color getReportColour(ReportModel report) {
+    if (report.severity.length > 2 || int.parse(report.severity) == 0) {
+      return Colors.purple.shade200;
+    }
+
+    List<Color> severityColours = [
+      Colors.green.shade300,
+      Colors.lightGreen.shade300,
+      Colors.lime.shade300,
+      Colors.yellow.shade300,
+      Colors.amber.shade300,
+      Colors.orange.shade300,
+      Colors.deepOrange.shade300,
+      Colors.red.shade300,
+      Colors.red.shade400,
+      Colors.red.shade500,
+    ];
+
+    return severityColours[int.parse(report.severity) - 1];
   }
 }
