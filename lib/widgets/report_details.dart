@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:roam_and_report/converters/report_status_converter.dart';
 import 'package:roam_and_report/enums/report_status.dart';
+import 'package:roam_and_report/enums/vote_action.dart';
 import 'package:roam_and_report/helpers/local_council_info.dart';
 import 'package:roam_and_report/models/report_model.dart';
-import 'package:roam_and_report/models/vote_result.dart';
 import 'package:roam_and_report/services/report_provider.dart';
 
 import '../services/image_viewer.dart';
@@ -143,6 +143,18 @@ class _ReportDetailsState extends State<ReportDetails> {
                           }),
                         },
                       ),
+                      if (!isOnReportManagement &&
+                          report.status != ReportStatus.Resolved &&
+                          report.dislikes > 5)
+                        Column(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.access_time, size: 28),
+                              onPressed: () => changeStatusToResolved(context),
+                            ),
+                            Text('Mark as \nResolved'),
+                          ],
+                        ),
                       if (isOnReportManagement) SizedBox(width: 20),
                       if (isOnReportManagement)
                         Column(
@@ -397,61 +409,113 @@ class _ReportDetailsState extends State<ReportDetails> {
     String voteChoice,
     BuildContext context,
   ) async {
-    final userid = FirebaseAuth.instance.currentUser!.uid;
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final currentVote = report.votes[userId];
 
-    final voteResult = await ReportProvider().voteReport(
-      report,
-      voteChoice,
-      userid,
-    );
-
-    if (voteResult.needsConfirmation) {
-      final replaceVote = await checkUserWantsToChangeVote(context);
-      if (!replaceVote) {
-        return;
-      }
-
-      final confirmedResult = await ReportProvider()
-          .voteOnReportWithDifferentVote(
-            report,
-            Map.from(report.votes),
-            voteChoice,
-            userid,
-          );
-      if (confirmedResult.successVote) _updateVote(confirmedResult, voteChoice);
+    // CASE 1: No vote yet → add vote
+    if (currentVote == null) {
+      ReportProvider().voteOnReport(
+        report,
+        Map.from(report.votes),
+        voteChoice,
+        userId,
+      );
+      _updateVote(voteChoice, action: VoteAction.add);
       return;
     }
-    if (voteResult.successVote) {
-      _updateVote(voteResult, voteChoice);
+
+    // CASE 2: Same vote → remove
+    if (currentVote == voteChoice) {
+      final confirm = await checkUserWantsToRemoveVote(context);
+      if (confirm == null || confirm == false) return;
+
+      ReportProvider().removeVoteOnReport(
+        report,
+        Map.from(report.votes),
+        currentVote,
+        userId,
+      );
+
+      _updateVote(voteChoice, action: VoteAction.remove);
+      return;
+    }
+
+    // CASE 3: Different vote → ask user
+    final change = await checkUserWantsToChangeVote(context);
+    if (change == null) return;
+
+    if (change) {
+      // change vote
+      ReportProvider().voteOnReportWithDifferentVote(
+        report,
+        Map.from(report.votes),
+        voteChoice,
+        userId,
+      );
+      _updateVote(voteChoice, action: VoteAction.switchVote);
+    } else {
+      // remove vote
+      ReportProvider().removeVoteOnReport(
+        report,
+        Map.from(report.votes),
+        currentVote,
+        userId,
+      );
+      _updateVote(voteChoice, action: VoteAction.remove);
     }
   }
 
-  void _updateVote(VoteResult result, String voteChoice) {
+  void _updateVote(String voteChoice, {required VoteAction action}) {
     final userId = FirebaseAuth.instance.currentUser!.uid;
 
     setState(() {
+      int likes = report.likes;
+      int dislikes = report.dislikes;
+      final updatedVotes = Map<String, String>.from(report.votes);
+      final currentVote = updatedVotes[userId];
+
+      switch (action) {
+        case VoteAction.add:
+          if (voteChoice == 'likes') likes++;
+          if (voteChoice == 'dislikes') dislikes++;
+          updatedVotes[userId] = voteChoice;
+          userVote = voteChoice;
+          break;
+
+        case VoteAction.remove:
+          if (currentVote == 'likes') likes--;
+          if (currentVote == 'dislikes') dislikes--;
+          updatedVotes.remove(userId);
+          userVote = null;
+          break;
+
+        case VoteAction.switchVote:
+          if (currentVote == 'likes') likes--;
+          if (currentVote == 'dislikes') dislikes--;
+
+          if (voteChoice == 'likes') likes++;
+          if (voteChoice == 'dislikes') dislikes++;
+
+          updatedVotes[userId] = voteChoice;
+          userVote = voteChoice;
+          break;
+      }
+
       report = report.copyWith(
-        likes: voteChoice == 'likes'
-            ? report.likes + 1
-            : (result.decreaseOtherVote ? report.likes - 1 : report.likes),
-        dislikes: voteChoice == 'dislikes'
-            ? report.dislikes + 1
-            : (result.decreaseOtherVote
-                  ? report.dislikes - 1
-                  : report.dislikes),
-        votes: {...report.votes, userId: voteChoice},
+        likes: likes,
+        dislikes: dislikes,
+        votes: updatedVotes,
       );
-      userVote = voteChoice;
     });
   }
 
-  static Future<bool> checkUserWantsToChangeVote(BuildContext context) async {
+  static Future<bool?> checkUserWantsToRemoveVote(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text("Change your vote"),
+            title: const Text("Remove your vote"),
             content: const Text(
-              "You have already voted on this report. Do you want to change your vote?",
+              "You have already voted on this report. Do you want to remove your vote?",
             ),
             actions: [
               TextButton(
@@ -460,12 +524,73 @@ class _ReportDetailsState extends State<ReportDetails> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text("Yes, change it"),
+                child: const Text("Yes, remove it"),
               ),
             ],
           ),
         ) ??
         false;
+  }
+
+  static Future<bool?> checkUserWantsToChangeVote(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Change your vote"),
+        content: const Text(
+          "You have already voted on this report. Do you want to change your vote?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text("No, cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Yes, remove it"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Yes, change it"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> changeStatusToResolved(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Change status to resolved"),
+        content: const Text(
+          "Are you sure you want to change the status to resolved?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("No, cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Yes, change it"),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result == true) {
+      setState(() {
+        report.status = ReportStatus.Resolved;
+      });
+
+      ReportProvider.updateReportStatus(
+        report,
+        ReportStatus.Resolved.toString(),
+      );
+
+      onStatusChanged();
+    }
   }
 
   Future<void> showStatusChoices(

@@ -51,8 +51,8 @@ class MapContainer extends StatefulWidget {
 
 class _MapContainerState extends State<MapContainer> {
   final String? mapApiKey = kIsWeb
-      ? const String.fromEnvironment('MAPTILER_API_KEY')
-      : dotenv.env['MAPTILER_API_KEY'];
+      ? const String.fromEnvironment('MAPTILER_API_KEY2')
+      : dotenv.env['MAPTILER_API_KEY2'];
 
   late final Map<MapStyle, String> mapStyles;
   MapStyle currentStyle = MapStyle.OpenStreetMap;
@@ -110,7 +110,7 @@ class _MapContainerState extends State<MapContainer> {
           width: 150,
           height: 150,
           point: widget.initialLocation!,
-          child: Icon(Icons.location_on, color: Colors.red, size: 35),
+          child: Icon(Icons.location_on, color: Colors.purple, size: 35),
         ),
       );
       _mapLoading = false;
@@ -207,7 +207,8 @@ class _MapContainerState extends State<MapContainer> {
                     }); */
                   },
                   onTap: (tapPosition, point) {
-                    if (!widget.isShowingReportDetails) {
+                    if (!showOtherReports && !widget.isShowingReportDetails) {
+                      //making a report
                       setState(() {
                         _markers.clear();
                         _markers.add(
@@ -217,8 +218,84 @@ class _MapContainerState extends State<MapContainer> {
                             point: point,
                             child: Icon(
                               Icons.location_on,
-                              color: Colors.red,
+                              color: Colors.purple,
                               size: 35,
+                            ),
+                          ),
+                        );
+                      });
+                      if (widget.onLocationSelected != null) {
+                        widget.onLocationSelected!(point);
+                      }
+                    }
+                  },
+                  onLongPress: (tapPosition, point) {
+                    if (!showOtherReports && !widget.isShowingReportDetails) {
+                      //making a report
+                      setState(() {
+                        _markers.clear();
+                        _markers.add(
+                          Marker(
+                            width: 150,
+                            height: 150,
+                            point: point,
+                            child: Icon(
+                              Icons.location_on,
+                              color: Colors.purple,
+                              size: 35,
+                            ),
+                          ),
+                        );
+                      });
+                      if (widget.onLocationSelected != null) {
+                        widget.onLocationSelected!(point);
+                      }
+                    } else if (!widget.isShowingReportDetails) {
+                      setState(() {
+                        _markers.clear();
+                        _markers.add(
+                          Marker(
+                            width: 150,
+                            height: 150,
+                            point: point,
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    "Submit \na report?",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    if (widget.onLocationSelected != null) {
+                                      widget.onLocationSelected!(point);
+                                    }
+                                  },
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: Colors.purple,
+                                    size: 35,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -251,12 +328,12 @@ class _MapContainerState extends State<MapContainer> {
                       ),
                     ],
                   ),
-                  MarkerLayer(markers: _markers),
                   if (showOtherReports)
                     MarkerClusterLayerWidget(
                       options: _buildClusterLayer(_otherReportsmarkers),
                     ),
                   MarkerLayer(markers: _locationMarker),
+                  MarkerLayer(markers: _markers),
                 ],
               ),
               if (_mapLoading)
@@ -514,53 +591,63 @@ class _MapContainerState extends State<MapContainer> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Choose map style",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.5,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  children: MapStyle.values.map((style) {
-                    final bool isSelected = currentStyle == style;
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.4,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Choose map style",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      crossAxisCount: 2,
+                      childAspectRatio: 1.5,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      children: MapStyle.values.map((style) {
+                        final bool isSelected = currentStyle == style;
 
-                    return ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isSelected
-                            ? Colors.blue
-                            : Colors.grey[500],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: EdgeInsets.all(12),
-                      ),
-                      onPressed: () {
-                        if (currentStyle != style) {
-                          setState(() => currentStyle = style);
-                        }
-                        Navigator.pop(context);
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(_mapStyleIcon(style), size: 32),
-                          SizedBox(height: 8),
-                          Text(style.toString().split('.').last),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
+                        return ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isSelected
+                                ? Colors.blue
+                                : Colors.grey[500],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            padding: EdgeInsets.all(12),
+                          ),
+                          onPressed: () {
+                            if (currentStyle != style) {
+                              setState(() => currentStyle = style);
+                            }
+                            Navigator.pop(context);
+                          },
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(_mapStyleIcon(style), size: 32),
+                              SizedBox(height: 8),
+                              Text(
+                                style.toString().split('.').last,
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -695,7 +782,7 @@ class _MapContainerState extends State<MapContainer> {
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ),
-            Icon(Icons.location_on, color: Colors.blue, size: 35),
+            Icon(Icons.my_location, color: Colors.blue, size: 35),
           ],
         ),
       ),

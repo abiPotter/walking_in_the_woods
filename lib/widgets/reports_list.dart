@@ -69,57 +69,80 @@ class ReportsList extends StatelessWidget {
                   ),
                 ],
               ),
-              child: ListTile(
-                title: Text(
-                  reportData.description,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 8),
-                    Text(reportData.locationText),
-                    SizedBox(height: 8),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(
-                            text: 'Reported on: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+              child: Stack(
+                children: [
+                  ListTile(
+                    title: Text(
+                      reportData.description,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 8),
+                        Text(reportData.locationText),
+                        SizedBox(height: 8),
+                        Text.rich(
                           TextSpan(
-                            text: reportData.date.toString().split(' ')[0],
+                            children: [
+                              const TextSpan(
+                                text: 'Reported on: ',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              TextSpan(
+                                text: reportData.date.toString().split(' ')[0],
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                        SizedBox(height: 8),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(
+                                text: 'Status: ',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              TextSpan(
+                                text:
+                                    ReportStatusConverter.reportStatusToString(
+                                      reportData.status,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => ReportDetails(
+                        report: reportData,
+                        isOnReportManagement: isOnReportManagement,
+                        isOnUserProfile: isOnUserProfile,
+                        onStatusChanged: () {},
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(
-                            text: 'Status: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(
-                            text: ReportStatusConverter.reportStatusToString(
-                              reportData.status,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => ReportDetails(
-                    report: reportData,
-                    isOnReportManagement: isOnReportManagement,
-                    isOnUserProfile: isOnUserProfile,
-                    onStatusChanged: () {},
                   ),
-                ),
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        reportData.severity.toString(),
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },

@@ -42,14 +42,16 @@ class _ReportPageState extends State<ReportPage> {
     "Blocked/overgrown footpath",
     "Damaged footpath",
     "Slippery footpath",
+    "Muddy/boggy",
     "Locked gate",
     "Poor signage",
     "Poor visibility",
     "Safety hazard",
-    "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
+    "Accessibility issue, e.g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
     "Flooding",
     "Temporary closure",
     "Farm/wildlife disruption",
+    "Other",
   ];
 
   final TextEditingController _dateController = TextEditingController();
@@ -80,6 +82,11 @@ class _ReportPageState extends State<ReportPage> {
                 : AutovalidateMode.disabled,
             child: ListView(
               children: [
+                const Text(
+                  "Make a Report",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
                 Text(
                   "Location:",
                   style: TextStyle(
@@ -118,10 +125,8 @@ class _ReportPageState extends State<ReportPage> {
                 ),
                 if (selectedLocation != null)
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'Selected Location: ${selectedLocation!.latitude}, ${selectedLocation!.longitude}',
-                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: getLocationText(selectedLocation!),
                   ),
                 if (_locationError != null)
                   Padding(
@@ -593,6 +598,7 @@ class _ReportPageState extends State<ReportPage> {
         "status": ReportStatus.Submitted.toString(),
         "severity": selectedSeverity.toString(),
       };
+      print(report);
 
       final reportRef = await HandleReports.saveReport(report);
       debugPrint("report added: ${reportRef.id}");
@@ -676,8 +682,13 @@ class _ReportPageState extends State<ReportPage> {
           )) {
         //report already exists so update details
         final reportModel = HandleReports.convertToReportModel(report, doc.id);
-        ReportProvider().voteReport(reportModel, 'likes', userid);
-        final dupReportSeverity = int.tryParse(report['severity']) ?? 0;
+        ReportProvider().voteOnReport(
+          reportModel,
+          Map.from(reportModel.votes),
+          'likes',
+          userid,
+        );
+        final dupReportSeverity = int.tryParse(reportModel.severity) ?? 0;
         if (severity > dupReportSeverity) {
           HandleReports.updateSeverity(reportModel, severity.toString());
         }
@@ -731,6 +742,24 @@ class _ReportPageState extends State<ReportPage> {
       downloadUrls.add(imageUrl);
     }
     return downloadUrls;
+  }
+
+  FutureBuilder<String> getLocationText(LatLng location) {
+    return FutureBuilder<String>(
+      future: convertlatlngToLocationText(
+        location.latitude,
+        location.longitude,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Text("Loading location details...");
+        } else if (snapshot.hasError) {
+          return Text("Error");
+        } else {
+          return Text(snapshot.data ?? "");
+        }
+      },
+    );
   }
 
   Future<String> convertlatlngToLocationText(double lat, double lng) async {
