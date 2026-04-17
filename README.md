@@ -44,3 +44,5 @@ All API keys and passwords are stored in the `.env` file. These are required for
 You can also access the app on a mobile device at: http://walking-in-the-woods.web.app
 
 The GitHub repo can be accessed here: https://github.com/abiPotter/walking_in_the_woods/ 
+
+If you have an android phone, you can install the app using the `universal.apk` file
