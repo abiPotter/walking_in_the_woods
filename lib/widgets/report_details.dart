@@ -30,9 +30,6 @@ class ReportDetails extends StatefulWidget {
 }
 
 class _ReportDetailsState extends State<ReportDetails> {
-  //late int likes;
-  //late int dislikes;
-  //late Map<String, String> votes;
   late String? userVote;
 
   late ReportModel report;
@@ -210,10 +207,10 @@ class _ReportDetailsState extends State<ReportDetails> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white, // clean background
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.grey.shade300, // subtle border
+                          color: Colors.grey.shade300,
                           width: 1.5,
                         ),
                       ),
@@ -412,7 +409,7 @@ class _ReportDetailsState extends State<ReportDetails> {
     final userId = FirebaseAuth.instance.currentUser!.uid;
     final currentVote = report.votes[userId];
 
-    // CASE 1: No vote yet → add vote
+    // CASE 1: No vote yet -> add vote
     if (currentVote == null) {
       ReportProvider().voteOnReport(
         report,
@@ -424,7 +421,7 @@ class _ReportDetailsState extends State<ReportDetails> {
       return;
     }
 
-    // CASE 2: Same vote → remove
+    // CASE 2: Same vote -> remove
     if (currentVote == voteChoice) {
       final confirm = await checkUserWantsToRemoveVote(context);
       if (confirm == null || confirm == false) return;
@@ -440,7 +437,7 @@ class _ReportDetailsState extends State<ReportDetails> {
       return;
     }
 
-    // CASE 3: Different vote → ask user
+    // CASE 3: Different vote -> ask user
     final change = await checkUserWantsToChangeVote(context);
     if (change == null) return;
 
@@ -607,10 +604,7 @@ class _ReportDetailsState extends State<ReportDetails> {
           ),
           insetPadding: const EdgeInsets.all(16),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minWidth: 150, // minimum width
-              maxWidth: 250, // maximum width
-            ),
+            constraints: const BoxConstraints(minWidth: 150, maxWidth: 250),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               child: Column(
@@ -730,7 +724,7 @@ class _ReportDetailsState extends State<ReportDetails> {
               ),
             ),
 
-            // Close button in true top-right
+            // Close button in true top right
             Positioned(
               right: 0,
               top: 0,

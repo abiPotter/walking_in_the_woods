@@ -139,10 +139,7 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 12),
                 Text(
                   "Date Found:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 TextFormField(
                   controller: _dateController,
@@ -162,10 +159,7 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 12),
                 Text(
                   "Description:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 SizedBox(height: 10),
                 ConstrainedBox(
@@ -204,16 +198,14 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 8),
                 Text(
                   "Any additional information:",
-                  style: TextStyle(
-                    fontSize: 16, // optional, adjust size
-                  ),
+                  style: TextStyle(fontSize: 16),
                 ),
                 Text(
                   "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected",
                   style: TextStyle(fontStyle: FontStyle.italic),
                 ),
                 TextFormField(
-                  maxLines: null, // grows vertically
+                  maxLines: 10, // grows vertically
                   minLines: 3,
                   keyboardType: TextInputType.multiline,
                   decoration: const InputDecoration(
@@ -228,10 +220,7 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 12),
                 Text(
                   "Severity Level:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 SizedBox(height: 8),
                 Container(
@@ -301,10 +290,7 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 12),
                 Text(
                   "Photos:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
                   "This could include: \n - Close up of the problem \n - Distance picture for context",
@@ -598,7 +584,6 @@ class _ReportPageState extends State<ReportPage> {
         "status": ReportStatus.Submitted.toString(),
         "severity": selectedSeverity.toString(),
       };
-      print(report);
 
       final reportRef = await HandleReports.saveReport(report);
       debugPrint("report added: ${reportRef.id}");

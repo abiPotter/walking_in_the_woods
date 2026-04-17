@@ -1,16 +1,30 @@
-# my_app
+# Roam and Report
 
-A new Flutter project.
+A Flutter mobile application that allows users to submit and view reports about problems with footpaths.
 
-## Getting Started
+## Setup Instructions
 
-This project is a starting point for a Flutter application.
+### 1. Install Flutter
 
-A few resources to get you started if this is your first Flutter project:
+Follow the official installation guide:
+https://docs.flutter.dev/install 
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Ensure flutter is installed correctly by running: **flutter doctor**
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 2. Install Dependencies
+
+**flutter pub get** installs all required dependencies listed in `pubspec.yaml`.
+However, the Flutter SDK must already be installed on the system before running this command.
+
+### 3. Running App on an Emulator
+
+The application can be run on an Android emulator.
+
+To use an emulator:
+1. Open Android Studio
+2. Go to Device Manager (AVD Manager)
+3. Start a virtual device
+
+Once the emulator is running, verify Flutter detects it with **flutter devices**
+
+Run the application using **flutter run** 

@@ -50,7 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   SizedBox(width: 12),
@@ -171,14 +171,16 @@ class _ProfilePageState extends State<ProfilePage> {
       "Blocked/overgrown footpath",
       "Damaged footpath",
       "Slippery footpath",
+      "Muddy/boggy",
       "Locked gate",
       "Poor signage",
       "Poor visibility",
       "Safety hazard",
-      "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
+      "Accessibility issue, e.g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
       "Flooding",
       "Temporary closure",
       "Farm/wildlife disruption",
+      "Other",
     ];
 
     return showDialog<String>(

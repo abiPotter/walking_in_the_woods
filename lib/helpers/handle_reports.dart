@@ -32,23 +32,18 @@ class HandleReports {
         reportSnapshots = FirebaseFirestore.instance
             .collection('reports')
             .where('status', isEqualTo: ReportStatus.Submitted.toString())
-            //.orderBy('likes', descending: true)
-            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.InProgress) {
         //only retrieve in progress reports
         reportSnapshots = FirebaseFirestore.instance
             .collection('reports')
             .where('status', isEqualTo: ReportStatus.InProgress.toString())
-            //.orderBy('likes', descending: true)
-            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.Resolved) {
+        //only retrieve resolved reports
         reportSnapshots = FirebaseFirestore.instance
             .collection('reports')
             .where('status', isEqualTo: ReportStatus.Resolved.toString())
-            //.orderBy('likes', descending: true)
-            //.orderBy('date', descending: true)
             .snapshots();
       } else {
         if (filter != 'Likes' && filter != 'All') {
@@ -56,24 +51,18 @@ class HandleReports {
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('description', isEqualTo: filter)
-              //.orderBy('likes', descending: true)
-              //.orderBy('date', descending: true)
               .snapshots();
         } else if (location != null) {
           //find reports containing location name
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('location keywords', arrayContains: location.split(' ')[0])
-              //.orderBy('likes', descending: true)
-              //.orderBy('date', descending: true)
               .snapshots();
         } else {
-          //order by likes followed by date for default report management. Does not show resolved reports
+          //find all reports that are not resolved
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('status', isNotEqualTo: ReportStatus.Resolved.toString())
-              //.orderBy('likes', descending: true)
-              //.orderBy('date', descending: true)
               .snapshots();
         }
       }
@@ -85,7 +74,6 @@ class HandleReports {
             .collection('reports')
             .where('userid', isEqualTo: userid)
             .where('status', isEqualTo: ReportStatus.Submitted.toString())
-            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.InProgress) {
         //only retrieve in progress reports
@@ -93,9 +81,9 @@ class HandleReports {
             .collection('reports')
             .where('userid', isEqualTo: userid)
             .where('status', isEqualTo: ReportStatus.InProgress.toString())
-            //.orderBy('date', descending: true)
             .snapshots();
       } else if (status == ReportStatus.Resolved) {
+        //only retrieve resolved reports
         reportSnapshots = FirebaseFirestore.instance
             .collection('reports')
             .where('userid', isEqualTo: userid)
@@ -109,8 +97,6 @@ class HandleReports {
               .collection('reports')
               .where('userid', isEqualTo: userid)
               .where('description', isEqualTo: filter)
-              //.orderBy('likes', descending: true)
-              //.orderBy('date', descending: true)
               .snapshots();
         } else if (location != null) {
           //find reports containing location name
@@ -118,16 +104,13 @@ class HandleReports {
               .collection('reports')
               .where('userid', isEqualTo: userid)
               .where('location keywords', arrayContains: location.split(' ')[0])
-              //.orderBy('likes', descending: true)
-              //.orderBy('date', descending: true)
               .snapshots();
         } else {
-          //filter by user and order by date for default profile page
+          //find all reports that are not resolved
           reportSnapshots = FirebaseFirestore.instance
               .collection('reports')
               .where('userid', isEqualTo: userid)
               .where('status', isNotEqualTo: ReportStatus.Resolved.toString())
-              //.orderBy('date', descending: true)
               .snapshots();
         }
       }
@@ -201,29 +184,24 @@ class HandleReports {
         .get();
 
     // Map to store counts per day
-    Map<DateTime, int> counts = {};
+    Map<String, int> counts = {};
 
     for (var doc in snapshot.docs) {
       final timestamp = doc['date'] as Timestamp;
       final date = timestamp.toDate();
 
       // Normalize to just year/month/day (remove time)
-      final day = DateTime(date.year, date.month, date.day);
-
-      counts[day] = (counts[day] ?? 0) + 1;
+      final key = "${date.year}-${date.month}-${date.day}";
+      counts[key] = (counts[key] ?? 0) + 1;
     }
 
     // Build full 30-day list (including empty days)
     List<ReportDates> result = [];
 
     for (int i = 0; i < 30; i++) {
-      final day = DateTime(
-        startDate.year,
-        startDate.month,
-        startDate.day,
-      ).add(Duration(days: i));
-
-      result.add(ReportDates(date: day, totalReports: counts[day] ?? 0));
+      final day = startDate.add(Duration(days: i));
+      final key = "${day.year}-${day.month}-${day.day}";
+      result.add(ReportDates(date: day, totalReports: counts[key] ?? 0));
     }
 
     return result;
@@ -276,11 +254,12 @@ class HandleReports {
     Map<String, int> counts = {};
     for (var doc in snapshot.docs) {
       String description = doc['description'];
+      String writtenDescription = description;
       if (description ==
-          "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.") {
-        description = "Accessibility issue";
+          "Accessibility issue, e.g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.") {
+        writtenDescription = "Accessibility issue";
       }
-      counts[description] = (counts[description] ?? 0) + 1;
+      counts[writtenDescription] = (counts[writtenDescription] ?? 0) + 1;
     }
 
     List<String> possibleProblems = [
@@ -301,7 +280,7 @@ class HandleReports {
 
     // Build full description list
     List<ReportDescriptions> result = [];
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < possibleProblems.length; i++) {
       result.add(
         ReportDescriptions(
           description: possibleProblems[i],

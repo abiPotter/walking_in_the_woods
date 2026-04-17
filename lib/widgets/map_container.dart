@@ -51,8 +51,8 @@ class MapContainer extends StatefulWidget {
 
 class _MapContainerState extends State<MapContainer> {
   final String? mapApiKey = kIsWeb
-      ? const String.fromEnvironment('MAPTILER_API_KEY2')
-      : dotenv.env['MAPTILER_API_KEY2'];
+      ? const String.fromEnvironment('MAPTILER_API_KEY')
+      : dotenv.env['MAPTILER_API_KEY'];
 
   late final Map<MapStyle, String> mapStyles;
   MapStyle currentStyle = MapStyle.OpenStreetMap;
@@ -125,7 +125,6 @@ class _MapContainerState extends State<MapContainer> {
           'https://api.maptiler.com/maps/landscape-v4/{z}/{x}/{y}.png?key=$mapApiKey&v=1',
       MapStyle.OpenStreetMap:
           'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=$mapApiKey&v=1',
-      //'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       MapStyle.Satellite:
           'https://api.maptiler.com/maps/hybrid-v4/{z}/{x}/{y}.jpg?key=$mapApiKey&v=1',
       MapStyle.Streets:
@@ -196,15 +195,6 @@ class _MapContainerState extends State<MapContainer> {
 
                   onMapReady: () {
                     _mapReady = true;
-                    // Force redraw once layout is complete
-                    /* WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _mapController.move(
-                        widget.initialLocation ??
-                            _position ??
-                            const LatLng(50.7219, -3.5330),
-                        15,
-                      );
-                    }); */
                   },
                   onTap: (tapPosition, point) {
                     if (!showOtherReports && !widget.isShowingReportDetails) {
@@ -311,7 +301,6 @@ class _MapContainerState extends State<MapContainer> {
                     urlTemplate: mapStyles[currentStyle],
                     userAgentPackageName: 'com.undergrad_proj.roam_and_report',
                     tileProvider: kIsWeb
-                        //? NetworkTileProvider()
                         ? InMemoryTileProvider(_tileCache)
                         : CachedTileProvider(
                             store: _cacheStore!,
@@ -430,11 +419,9 @@ class _MapContainerState extends State<MapContainer> {
 
     if (!mounted) return;
 
-    //setState(() {
     _position = resolvedPosition;
     _usingDefaultLocation = resolvedPosition == const LatLng(50.7219, -3.5330);
-    //_mapLoading = false;
-    //});
+
     setState(() {
       _mapLoading = false;
     });
@@ -487,7 +474,7 @@ class _MapContainerState extends State<MapContainer> {
                   if (box != null) {
                     final pos = box.localToGlobal(
                       Offset.zero,
-                    ); // top-left corner
+                    ); // top left corner
                     final size = box.size;
                     final rect = Rect.fromLTWH(
                       pos.dx,
@@ -543,7 +530,6 @@ class _MapContainerState extends State<MapContainer> {
                 setState(() {
                   _searchSuggestions.clear();
                   _searchController.clear();
-                  //_mapLoading = true;
                   context.read<MapUiState>().closeKeyboard();
                 });
                 _moveToLocation(item: item);
@@ -801,7 +787,6 @@ class _MapContainerState extends State<MapContainer> {
     FocusScope.of(context).unfocus();
 
     _mapController.move(LatLng(lat, lon), 15);
-    //setState(() => _mapLoading = false);
     addLocationMarker(_markers, "Searched Location", LatLng(lat, lon));
   }
 
@@ -809,7 +794,6 @@ class _MapContainerState extends State<MapContainer> {
     setState(() {
       _searchSuggestions.clear();
       _searchController.clear();
-      //_mapLoading = true;
       context.read<MapUiState>().closeKeyboard();
     });
 

@@ -134,9 +134,6 @@ class AnalyticsPage extends StatelessWidget {
           dataSource: data,
           xValueMapper: (ReportDates d, _) => d.date,
           yValueMapper: (ReportDates d, _) => d.totalReports,
-
-          //markerSettings: MarkerSettings(isVisible: true),
-          //dataLabelSettings: DataLabelSettings(isVisible: true),
         ),
       ],
     );
@@ -178,8 +175,6 @@ class AnalyticsPage extends StatelessWidget {
           xValueMapper: (d, _) => d.description,
           yValueMapper: (d, _) => d.totalReports,
           dataLabelSettings: DataLabelSettings(isVisible: true),
-
-          // Optional: improve readability
           explode: true,
           explodeIndex: 0,
         ),

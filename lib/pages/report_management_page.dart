@@ -149,14 +149,16 @@ class _ReportManagementState extends State<ReportManagementPage> {
       "Blocked/overgrown footpath",
       "Damaged footpath",
       "Slippery footpath",
+      "Muddy/boggy",
       "Locked gate",
       "Poor signage",
       "Poor visibility",
       "Safety hazard",
-      "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
+      "Accessibility issue, e.g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
       "Flooding",
       "Temporary closure",
       "Farm/wildlife disruption",
+      "Other",
     ];
 
     return showDialog<String>(
