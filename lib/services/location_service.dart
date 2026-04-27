@@ -44,9 +44,9 @@ class LocationService {
   }
 
   static Future<LatLng> loadLocation({
-    LatLng defaultLocation = const LatLng(50.7219, -3.5330),
+    LatLng defaultLocation = const LatLng(0, 0),
   }) async {
-    //default location is Exeter
+    //default location is world map
     final pos = await getCurrentLocation();
     return pos ?? defaultLocation;
   }

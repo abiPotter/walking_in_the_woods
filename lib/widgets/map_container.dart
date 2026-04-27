@@ -181,10 +181,8 @@ class _MapContainerState extends State<MapContainer> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter:
-                      widget.initialLocation ??
-                      _position ??
-                      LatLng(50.7219, -3.5330),
-                  initialZoom: 15,
+                      widget.initialLocation ?? _position ?? LatLng(0, 0),
+                  initialZoom: _usingDefaultLocation ? 1 : 15,
                   maxZoom: 16,
                   minZoom: 10,
                   interactionOptions: widget.isShowingReportDetails
@@ -413,14 +411,14 @@ class _MapContainerState extends State<MapContainer> {
     try {
       resolvedPosition = await LocationService.loadLocation();
     } catch (e) {
-      // GPS denied or failed → fallback to Exeter
-      resolvedPosition = const LatLng(50.7219, -3.5330);
+      // GPS denied or failed → fallback to world map
+      resolvedPosition = const LatLng(0, 0);
     }
 
     if (!mounted) return;
 
     _position = resolvedPosition;
-    _usingDefaultLocation = resolvedPosition == const LatLng(50.7219, -3.5330);
+    _usingDefaultLocation = resolvedPosition == const LatLng(0.0, 0.0);
 
     setState(() {
       _mapLoading = false;
@@ -428,7 +426,9 @@ class _MapContainerState extends State<MapContainer> {
     if (_mapReady) {
       _mapController.move(resolvedPosition, 15);
     }
-    addLocationMarker(_locationMarker, "You are here", _position!);
+    if (!_usingDefaultLocation) {
+      addLocationMarker(_locationMarker, "You are here", _position!);
+    }
   }
 
   // ----------------- UI HELPERS ----------------
@@ -542,7 +542,7 @@ class _MapContainerState extends State<MapContainer> {
   }
 
   Widget _buildGpsWarning() {
-    // display a popup box telling the user GPS location could not be used, and so map has loaded to default location (Exeter)
+    // display a popup box telling the user GPS location could not be used, and so map has loaded to default location (world map)
     return Positioned(
       top: 90,
       left: 20,
