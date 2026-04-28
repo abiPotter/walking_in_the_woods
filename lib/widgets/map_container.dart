@@ -3,25 +3,22 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
+import 'package:http_cache_file_store/http_cache_file_store.dart';
+import 'package:path_provider/path_provider.dart';
+
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_map_cache/flutter_map_cache.dart';
-
 import 'package:latlong2/latlong.dart';
+
 import 'package:roam_and_report/helpers/states/map_ui_state.dart';
 import 'package:roam_and_report/models/report_model.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import 'package:flutter/foundation.dart' show kIsWeb;
-
-import 'package:http/http.dart' as http;
-
-import '../enums/map_style.dart';
-import '../services/location_service.dart';
-
-import 'package:http_cache_file_store/http_cache_file_store.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:roam_and_report/enums/map_style.dart';
+import 'package:roam_and_report/services/location_service.dart';
 
 class MapContainer extends StatefulWidget {
   final void Function(LatLng)? onLocationSelected;
@@ -243,6 +240,7 @@ class _MapContainerState extends State<MapContainer> {
                         _markers.clear();
                         _markers.add(
                           Marker(
+                            //marker for submitting a report
                             width: 150,
                             height: 150,
                             point: point,
@@ -316,6 +314,7 @@ class _MapContainerState extends State<MapContainer> {
                     ],
                   ),
                   if (showOtherReports)
+                    //markers for reports - clustered
                     MarkerClusterLayerWidget(
                       options: _buildClusterLayer(_otherReportsmarkers),
                     ),
@@ -411,7 +410,7 @@ class _MapContainerState extends State<MapContainer> {
     try {
       resolvedPosition = await LocationService.loadLocation();
     } catch (e) {
-      // GPS denied or failed → fallback to world map
+      // GPS denied or failed -> fallback to world map
       resolvedPosition = const LatLng(0, 0);
     }
 
@@ -734,7 +733,7 @@ class _MapContainerState extends State<MapContainer> {
       const Color(0xFFA6D96A), // 3 - light green
       const Color(0xFFFFEB3B), // 4 - bright yellow
       const Color(0xFFFFC107), // 5 - amber
-      const Color(0xFFFFA000), // 6 - strong amber/orange
+      const Color(0xFFFFA000), // 6 - strong amber
       const Color(0xFFFDB863), // 7 - orange
       const Color(0xFFF46D43), // 8 - deep orange
       const Color(0xFFD73027), // 9 - red

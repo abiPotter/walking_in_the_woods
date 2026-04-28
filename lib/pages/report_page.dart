@@ -1,24 +1,23 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-
-import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+
 import 'package:roam_and_report/helpers/handle_reports.dart';
 import 'package:roam_and_report/helpers/local_council_info.dart';
 import 'package:roam_and_report/services/report_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'package:http/http.dart' as http;
-
-import '../widgets/map_container.dart';
-import '../layout/main_layout.dart';
+import 'package:roam_and_report/widgets/map_container.dart';
+import 'package:roam_and_report/layout/main_layout.dart';
+import 'package:roam_and_report/enums/report_status.dart';
 import 'home_page.dart';
-import '../enums/report_status.dart';
 
 class ReportPage extends StatefulWidget {
   final LatLng? initialLocation;
@@ -89,10 +88,7 @@ class _ReportPageState extends State<ReportPage> {
                 ),
                 Text(
                   "Location:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
                   selectedLocation != null
@@ -300,6 +296,7 @@ class _ReportPageState extends State<ReportPage> {
                 Row(
                   children: [
                     IconButton(
+                      //select photos
                       icon: Icon(Icons.photo),
                       iconSize: 60,
                       onPressed: _showImageSourceSelection,
@@ -308,6 +305,7 @@ class _ReportPageState extends State<ReportPage> {
                         ? Expanded(
                             child: SizedBox(
                               height: 150,
+                              //showing selected photos
                               child: GridView.builder(
                                 itemCount: _images.length,
                                 gridDelegate:

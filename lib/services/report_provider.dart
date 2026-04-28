@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:roam_and_report/enums/report_status.dart';
 import 'package:roam_and_report/helpers/handle_reports.dart';
 import 'package:roam_and_report/models/report_model.dart';
 
@@ -66,19 +65,6 @@ class ReportProvider extends ChangeNotifier {
   //Delete report
   static void deleteReport(String id) {
     HandleReports.deleteReport(id);
-  }
-
-  //Utility
-  static Color getReportColour1(ReportModel report) {
-    ReportStatus status = report.status;
-    if (status == ReportStatus.Submitted) {
-      return Colors.red.shade200;
-    } else if (status == ReportStatus.InProgress) {
-      return Colors.amber.shade200;
-    } else if (status == ReportStatus.Resolved) {
-      return Colors.green.shade200;
-    }
-    return Colors.white;
   }
 
   static Color getReportColour(ReportModel report) {

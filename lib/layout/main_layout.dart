@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'package:roam_and_report/helpers/states/admin_state.dart';
 import 'package:roam_and_report/pages/admin_login_page.dart';
 import 'package:roam_and_report/pages/analytics_page.dart';
@@ -6,9 +8,7 @@ import 'package:roam_and_report/pages/help_page.dart';
 import 'package:roam_and_report/pages/report_page.dart';
 import 'package:roam_and_report/pages/profile_page.dart';
 import 'package:roam_and_report/pages/report_management_page.dart';
-import 'package:provider/provider.dart';
-
-import '../pages/home_page.dart';
+import 'package:roam_and_report/pages/home_page.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;

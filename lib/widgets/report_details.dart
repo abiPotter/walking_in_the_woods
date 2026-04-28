@@ -1,14 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:roam_and_report/converters/report_status_converter.dart';
 import 'package:roam_and_report/enums/report_status.dart';
 import 'package:roam_and_report/enums/vote_action.dart';
 import 'package:roam_and_report/helpers/local_council_info.dart';
 import 'package:roam_and_report/models/report_model.dart';
 import 'package:roam_and_report/services/report_provider.dart';
-
-import '../services/image_viewer.dart';
+import 'package:roam_and_report/services/image_viewer.dart';
 import 'map_container.dart';
 
 class ReportDetails extends StatefulWidget {
@@ -421,7 +421,7 @@ class _ReportDetailsState extends State<ReportDetails> {
       return;
     }
 
-    // CASE 2: Same vote -> remove
+    // CASE 2: Same vote -> check and remove
     if (currentVote == voteChoice) {
       final confirm = await checkUserWantsToRemoveVote(context);
       if (confirm == null || confirm == false) return;

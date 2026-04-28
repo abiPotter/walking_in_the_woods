@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'package:roam_and_report/helpers/handle_reports.dart';
 import 'package:roam_and_report/layout/main_layout.dart';
 import 'package:roam_and_report/models/graphs/report_dates.dart';
 import 'package:roam_and_report/models/graphs/report_descriptions.dart';
 import 'package:roam_and_report/models/graphs/report_severities.dart';
+
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class AnalyticsPage extends StatelessWidget {
@@ -103,17 +105,6 @@ class AnalyticsPage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  List<ReportSeverities> getReportDates() {
-    List<ReportSeverities> data = [
-      ReportSeverities(severity: 1, totalReports: 12),
-      ReportSeverities(severity: 2, totalReports: 18),
-      ReportSeverities(severity: 3, totalReports: 9),
-      ReportSeverities(severity: 4, totalReports: 15),
-    ];
-
-    return data;
   }
 
   SfCartesianChart showReportDateLineChart(List<ReportDates> data) {

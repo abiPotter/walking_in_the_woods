@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:roam_and_report/services/report_provider.dart';
-import 'package:roam_and_report/widgets/report_details.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../widgets/map_container.dart';
-import '../helpers/states/map_ui_state.dart';
-import '../layout/main_layout.dart';
-
+import 'package:roam_and_report/services/report_provider.dart';
+import 'package:roam_and_report/widgets/report_details.dart';
+import 'package:roam_and_report/widgets/map_container.dart';
+import 'package:roam_and_report/helpers/states/map_ui_state.dart';
+import 'package:roam_and_report/layout/main_layout.dart';
 import 'report_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _checkFirstLaunch() async {
+    //show a prototype warning if first launch
     final prefs = await SharedPreferences.getInstance();
     final bool hasSeenPrototypeDialog =
         prefs.getBool('hasSeenPrototypeWarning') ?? false;
@@ -103,7 +103,7 @@ class _HomePageState extends State<HomePage> {
               SizedBox(height: 16),
 
               Text(
-                "If you don't allow location access, the map will centre on Exeter and you'll need to find your location manually.",
+                "If you don't allow location access, the map will centre on world map and you'll need to find your location manually.",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
@@ -121,6 +121,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
+                  //set shared preferences so will not see warning again
                   await prefs.setBool('hasSeenPrototypeWarning', true);
                   Navigator.of(context).pop();
                   setState(() {
@@ -202,7 +203,7 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: FloatingActionButton.extended(
                   onPressed: () {
-                    //open profile
+                    //open report page
                     Navigator.of(
                       context,
                     ).push(MaterialPageRoute(builder: (_) => ReportPage()));

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'package:roam_and_report/layout/main_layout.dart';
 
 class PasswordPage extends StatefulWidget {
@@ -15,6 +16,7 @@ class PasswordPage extends StatefulWidget {
 class _PasswordPageState extends State<PasswordPage> {
   final TextEditingController controller = TextEditingController();
   bool incorrectPassword = false;
+  //admin password stored in environment variable
   final String? adminPassword = kIsWeb
       ? const String.fromEnvironment('ADMIN_PASSWORD')
       : dotenv.env['ADMIN_PASSWORD'];

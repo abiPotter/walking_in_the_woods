@@ -67,6 +67,7 @@ class LocalCouncilInfo {
                     child: Column(
                       children: [
                         Text(
+                          //name of council
                           council['name'] ?? '',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
@@ -76,6 +77,7 @@ class LocalCouncilInfo {
                         ),
                         const SizedBox(height: 6),
                         TextButton.icon(
+                          //council website
                           onPressed: () async {
                             final url = council['website'] ?? '';
                             if (url.isNotEmpty) {
@@ -132,6 +134,7 @@ class LocalCouncilInfo {
     final jsonString = await rootBundle.loadString('assets/councils.json');
     final List data = jsonDecode(jsonString);
 
+    //find council website in json file
     final matchCouncil = data.firstWhere(
       (counciljson) => counciljson['name'].toString().toLowerCase().contains(
         councilName.toLowerCase(),

@@ -160,7 +160,7 @@ class HelpPage extends StatelessWidget {
 class HelpSection extends StatelessWidget {
   final String title;
   final IconData icon;
-  final List<Widget> children;
+  final List<Widget> children; //BulletPoints
 
   const HelpSection({
     super.key,

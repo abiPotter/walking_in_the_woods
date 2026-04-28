@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:roam_and_report/converters/report_status_converter.dart';
 import 'package:roam_and_report/models/report_model.dart';
 import 'package:roam_and_report/services/report_provider.dart';
@@ -45,7 +46,7 @@ class ReportsList extends StatelessWidget {
           if (location != null) {
             return const Text("Cannot find any reports with that location");
           }
-          if (filterItem == 'Date') {
+          if (filterItem == 'All') {
             return const Text("You have not submitted any reports yet");
           }
           return const Text("You have not got any reports under this filter");

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:roam_and_report/pages/password_page.dart';
 import 'package:roam_and_report/widgets/reports_list.dart';
-import '../layout/main_layout.dart';
+import 'package:roam_and_report/layout/main_layout.dart';
 
 class ReportManagementPage extends StatefulWidget {
   const ReportManagementPage({super.key});

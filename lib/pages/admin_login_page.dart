@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'package:roam_and_report/helpers/states/admin_state.dart';
 import 'package:roam_and_report/layout/main_layout.dart';
-import 'package:provider/provider.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -146,7 +148,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       );
     }
 
-    //Already logged in as admin
+    //already logged in as admin
     if (isAdmin == true) {
       return MainLayout(
         child: Padding(
@@ -177,6 +179,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       );
     }
 
+    //sign in page
     return MainLayout(
       child: Padding(
         padding: EdgeInsets.all(16),

@@ -1,7 +1,7 @@
 import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'package:roam_and_report/converters/report_status_converter.dart';
 import 'package:roam_and_report/enums/report_status.dart';
 import 'package:roam_and_report/models/graphs/report_dates.dart';
@@ -140,6 +140,7 @@ class HandleReports {
                 })
                 .toList()
               ..sort((report1, report2) {
+                //sort according to priority score - list has highest priority at top
                 final report1score = calculatePriorityScore(report1);
                 final report2score = calculatePriorityScore(report2);
                 return report2score.compareTo(report1score); // descending
@@ -190,12 +191,12 @@ class HandleReports {
       final timestamp = doc['date'] as Timestamp;
       final date = timestamp.toDate();
 
-      // Normalize to just year/month/day (remove time)
+      // Normalise to just year-month-day (remove time)
       final key = "${date.year}-${date.month}-${date.day}";
       counts[key] = (counts[key] ?? 0) + 1;
     }
 
-    // Build full 30-day list (including empty days)
+    // Build full 30 day list (including empty days)
     List<ReportDates> result = [];
 
     for (int i = 0; i < 30; i++) {
