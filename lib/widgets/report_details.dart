@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:roam_and_report/converters/report_status_converter.dart';
 import 'package:roam_and_report/enums/report_status.dart';
+import 'package:roam_and_report/enums/vote_action.dart';
 import 'package:roam_and_report/helpers/local_council_info.dart';
 import 'package:roam_and_report/models/report_model.dart';
-import 'package:roam_and_report/models/vote_result.dart';
 import 'package:roam_and_report/services/report_provider.dart';
 
 import '../services/image_viewer.dart';
@@ -30,15 +30,14 @@ class ReportDetails extends StatefulWidget {
 }
 
 class _ReportDetailsState extends State<ReportDetails> {
-  //late int likes;
-  //late int dislikes;
-  //late Map<String, String> votes;
   late String? userVote;
 
   late ReportModel report;
   late bool isOnReportManagement;
   late bool isOnUserProfile;
   late VoidCallback onStatusChanged;
+
+  bool showLikeInfo = false;
 
   @override
   void initState() {
@@ -133,6 +132,26 @@ class _ReportDetailsState extends State<ReportDetails> {
                           Text(report.dislikes.toString()),
                         ],
                       ),
+                      IconButton(
+                        icon: Icon(Icons.info_outline, size: 20),
+                        onPressed: () => {
+                          setState(() {
+                            showLikeInfo = !showLikeInfo;
+                          }),
+                        },
+                      ),
+                      if (!isOnReportManagement &&
+                          report.status != ReportStatus.Resolved &&
+                          report.dislikes > 5)
+                        Column(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.access_time, size: 28),
+                              onPressed: () => changeStatusToResolved(context),
+                            ),
+                            Text('Mark as \nResolved'),
+                          ],
+                        ),
                       if (isOnReportManagement) SizedBox(width: 20),
                       if (isOnReportManagement)
                         Column(
@@ -180,6 +199,53 @@ class _ReportDetailsState extends State<ReportDetails> {
                         ),
                     ],
                   ),
+                  if (showLikeInfo) SizedBox(height: 5),
+                  if (showLikeInfo)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.thumb_up,
+                                size: 18,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: 6),
+                              Text("Confirm issue still exists"),
+                            ],
+                          ),
+                          SizedBox(height: 6),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.thumb_down,
+                                size: 18,
+                                color: Colors.red,
+                              ),
+                              SizedBox(width: 6),
+                              Text("Issue no longer a problem"),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   SizedBox(height: 8),
                   Text(report.locationText),
                   SizedBox(
@@ -248,6 +314,24 @@ class _ReportDetailsState extends State<ReportDetails> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(
+                          text: 'Severity: ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextSpan(
+                          text: report.severity,
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     'Photos: ',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -291,17 +375,15 @@ class _ReportDetailsState extends State<ReportDetails> {
                             fontStyle: FontStyle.italic,
                           ),
                         ),
-                  if (isOnReportManagement || isOnUserProfile)
-                    SizedBox(height: 8),
-                  if (isOnReportManagement || isOnUserProfile)
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.apartment),
-                      label: const Text("Local Council Information"),
-                      onPressed: () => showLocalCouncilInfo(
-                        context,
-                        LatLng(report.latitude, report.longitude),
-                      ),
+                  SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.apartment),
+                    label: const Text("Local Council Information"),
+                    onPressed: () => showLocalCouncilInfo(
+                      context,
+                      LatLng(report.latitude, report.longitude),
                     ),
+                  ),
                 ],
               ),
             ),
@@ -324,61 +406,113 @@ class _ReportDetailsState extends State<ReportDetails> {
     String voteChoice,
     BuildContext context,
   ) async {
-    final userid = FirebaseAuth.instance.currentUser!.uid;
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final currentVote = report.votes[userId];
 
-    final voteResult = await ReportProvider().voteReport(
-      report,
-      voteChoice,
-      userid,
-    );
-
-    if (voteResult.needsConfirmation) {
-      final replaceVote = await checkUserWantsToChangeVote(context);
-      if (!replaceVote) {
-        return;
-      }
-
-      final confirmedResult = await ReportProvider()
-          .voteOnReportWithDifferentVote(
-            report,
-            Map.from(report.votes),
-            voteChoice,
-            userid,
-          );
-      if (confirmedResult.successVote) _updateVote(confirmedResult, voteChoice);
+    // CASE 1: No vote yet -> add vote
+    if (currentVote == null) {
+      ReportProvider().voteOnReport(
+        report,
+        Map.from(report.votes),
+        voteChoice,
+        userId,
+      );
+      _updateVote(voteChoice, action: VoteAction.add);
       return;
     }
-    if (voteResult.successVote) {
-      _updateVote(voteResult, voteChoice);
+
+    // CASE 2: Same vote -> remove
+    if (currentVote == voteChoice) {
+      final confirm = await checkUserWantsToRemoveVote(context);
+      if (confirm == null || confirm == false) return;
+
+      ReportProvider().removeVoteOnReport(
+        report,
+        Map.from(report.votes),
+        currentVote,
+        userId,
+      );
+
+      _updateVote(voteChoice, action: VoteAction.remove);
+      return;
+    }
+
+    // CASE 3: Different vote -> ask user
+    final change = await checkUserWantsToChangeVote(context);
+    if (change == null) return;
+
+    if (change) {
+      // change vote
+      ReportProvider().voteOnReportWithDifferentVote(
+        report,
+        Map.from(report.votes),
+        voteChoice,
+        userId,
+      );
+      _updateVote(voteChoice, action: VoteAction.switchVote);
+    } else {
+      // remove vote
+      ReportProvider().removeVoteOnReport(
+        report,
+        Map.from(report.votes),
+        currentVote,
+        userId,
+      );
+      _updateVote(voteChoice, action: VoteAction.remove);
     }
   }
 
-  void _updateVote(VoteResult result, String voteChoice) {
+  void _updateVote(String voteChoice, {required VoteAction action}) {
     final userId = FirebaseAuth.instance.currentUser!.uid;
 
     setState(() {
+      int likes = report.likes;
+      int dislikes = report.dislikes;
+      final updatedVotes = Map<String, String>.from(report.votes);
+      final currentVote = updatedVotes[userId];
+
+      switch (action) {
+        case VoteAction.add:
+          if (voteChoice == 'likes') likes++;
+          if (voteChoice == 'dislikes') dislikes++;
+          updatedVotes[userId] = voteChoice;
+          userVote = voteChoice;
+          break;
+
+        case VoteAction.remove:
+          if (currentVote == 'likes') likes--;
+          if (currentVote == 'dislikes') dislikes--;
+          updatedVotes.remove(userId);
+          userVote = null;
+          break;
+
+        case VoteAction.switchVote:
+          if (currentVote == 'likes') likes--;
+          if (currentVote == 'dislikes') dislikes--;
+
+          if (voteChoice == 'likes') likes++;
+          if (voteChoice == 'dislikes') dislikes++;
+
+          updatedVotes[userId] = voteChoice;
+          userVote = voteChoice;
+          break;
+      }
+
       report = report.copyWith(
-        likes: voteChoice == 'likes'
-            ? report.likes + 1
-            : (result.decreaseOtherVote ? report.likes - 1 : report.likes),
-        dislikes: voteChoice == 'dislikes'
-            ? report.dislikes + 1
-            : (result.decreaseOtherVote
-                  ? report.dislikes - 1
-                  : report.dislikes),
-        votes: {...report.votes, userId: voteChoice},
+        likes: likes,
+        dislikes: dislikes,
+        votes: updatedVotes,
       );
-      userVote = voteChoice;
     });
   }
 
-  static Future<bool> checkUserWantsToChangeVote(BuildContext context) async {
+  static Future<bool?> checkUserWantsToRemoveVote(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text("Change your vote"),
+            title: const Text("Remove your vote"),
             content: const Text(
-              "You have already voted on this report. Do you want to change your vote?",
+              "You have already voted on this report. Do you want to remove your vote?",
             ),
             actions: [
               TextButton(
@@ -387,12 +521,73 @@ class _ReportDetailsState extends State<ReportDetails> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text("Yes, change it"),
+                child: const Text("Yes, remove it"),
               ),
             ],
           ),
         ) ??
         false;
+  }
+
+  static Future<bool?> checkUserWantsToChangeVote(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Change your vote"),
+        content: const Text(
+          "You have already voted on this report. Do you want to change your vote?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text("No, cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Yes, remove it"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Yes, change it"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> changeStatusToResolved(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Change status to resolved"),
+        content: const Text(
+          "Are you sure you want to change the status to resolved?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("No, cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Yes, change it"),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result == true) {
+      setState(() {
+        report.status = ReportStatus.Resolved;
+      });
+
+      ReportProvider.updateReportStatus(
+        report,
+        ReportStatus.Resolved.toString(),
+      );
+
+      onStatusChanged();
+    }
   }
 
   Future<void> showStatusChoices(
@@ -409,10 +604,7 @@ class _ReportDetailsState extends State<ReportDetails> {
           ),
           insetPadding: const EdgeInsets.all(16),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minWidth: 150, // minimum width
-              maxWidth: 250, // maximum width
-            ),
+            constraints: const BoxConstraints(minWidth: 150, maxWidth: 250),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               child: Column(
@@ -532,7 +724,7 @@ class _ReportDetailsState extends State<ReportDetails> {
               ),
             ),
 
-            // Close button in true top-right
+            // Close button in true top right
             Positioned(
               right: 0,
               top: 0,

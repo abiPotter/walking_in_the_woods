@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:roam_and_report/helpers/states/admin_state.dart';
 import 'package:roam_and_report/pages/admin_login_page.dart';
+import 'package:roam_and_report/pages/analytics_page.dart';
+import 'package:roam_and_report/pages/help_page.dart';
 import 'package:roam_and_report/pages/report_page.dart';
-import 'package:roam_and_report/pages/profile.dart';
+import 'package:roam_and_report/pages/profile_page.dart';
 import 'package:roam_and_report/pages/report_management_page.dart';
 import 'package:provider/provider.dart';
 
@@ -43,6 +45,7 @@ class MainLayout extends StatelessWidget {
             ).push(MaterialPageRoute(builder: (_) => ProfilePage()));
           },
           onLongPress: () {
+            //open admin login
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AdminLoginPage()),
@@ -89,10 +92,23 @@ class MainLayout extends StatelessWidget {
             if (isAdmin)
               _drawerItem(
                 context,
+                title: 'Analytics',
+                icon: Icons.analytics,
+                page: AnalyticsPage(),
+              ),
+            if (isAdmin)
+              _drawerItem(
+                context,
                 title: 'Admin',
                 icon: Icons.lock,
                 page: ReportManagementPage(),
               ),
+            _drawerItem(
+              context,
+              title: 'About & Help',
+              icon: Icons.help,
+              page: HelpPage(),
+            ),
           ],
         ),
       ),

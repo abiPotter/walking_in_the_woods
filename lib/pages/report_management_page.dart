@@ -12,7 +12,7 @@ class ReportManagementPage extends StatefulWidget {
 
 class _ReportManagementState extends State<ReportManagementPage> {
   bool unlocked = false;
-  String filter = "Likes";
+  String filter = "All";
   String? filterItem;
   bool isStatus = false;
   String? location;
@@ -29,10 +29,10 @@ class _ReportManagementState extends State<ReportManagementPage> {
       child: Center(
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             const Text(
               "Manage reports",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Row(
@@ -55,7 +55,7 @@ class _ReportManagementState extends State<ReportManagementPage> {
                       value: 'Resolved',
                       child: Text('Resolved'),
                     ),
-                    DropdownMenuItem(value: 'Likes', child: Text('Likes')),
+                    DropdownMenuItem(value: 'All', child: Text('All Active')),
                     DropdownMenuItem(
                       value: 'Problem Type',
                       child: Text('Problem type'),
@@ -66,7 +66,7 @@ class _ReportManagementState extends State<ReportManagementPage> {
                     if (status == 'Problem Type') {
                       String? problem = await showProblemTypePicker(context);
                       if (problem == null) {
-                        problemItem = 'Likes';
+                        problemItem = 'All';
                       } else {
                         problemItem = problem;
                       }
@@ -139,7 +139,7 @@ class _ReportManagementState extends State<ReportManagementPage> {
   Future<void> searchReportsInLocation(String query) async {
     setState(() {
       _searchController.clear();
-      filter = "Likes";
+      filter = "All";
       location = query;
     });
   }
@@ -149,14 +149,16 @@ class _ReportManagementState extends State<ReportManagementPage> {
       "Blocked/overgrown footpath",
       "Damaged footpath",
       "Slippery footpath",
+      "Muddy/boggy",
       "Locked gate",
       "Poor signage",
       "Poor visibility",
       "Safety hazard",
-      "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
+      "Accessibility issue, e.g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
       "Flooding",
       "Temporary closure",
       "Farm/wildlife disruption",
+      "Other",
     ];
 
     return showDialog<String>(

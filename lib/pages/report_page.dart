@@ -4,10 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:roam_and_report/helpers/handle_reports.dart';
 import 'package:roam_and_report/helpers/local_council_info.dart';
+import 'package:roam_and_report/services/report_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:http/http.dart' as http;
@@ -32,22 +35,23 @@ class _ReportPageState extends State<ReportPage> {
   DateTime? reportedDate;
   String? shortDescription;
   String longDescription = "";
+  int? selectedSeverity;
   final List<XFile> _images = [];
-
-  final db = FirebaseFirestore.instance;
 
   List<String> possibleProblems = [
     "Blocked/overgrown footpath",
     "Damaged footpath",
     "Slippery footpath",
+    "Muddy/boggy",
     "Locked gate",
     "Poor signage",
     "Poor visibility",
     "Safety hazard",
-    "Accessibility issue, e,g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
+    "Accessibility issue, e.g, steep slope, narrow path, obstacles inaccessible for wheelchair users, etc.",
     "Flooding",
     "Temporary closure",
     "Farm/wildlife disruption",
+    "Other",
   ];
 
   final TextEditingController _dateController = TextEditingController();
@@ -78,6 +82,11 @@ class _ReportPageState extends State<ReportPage> {
                 : AutovalidateMode.disabled,
             child: ListView(
               children: [
+                const Text(
+                  "Make a Report",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
                 Text(
                   "Location:",
                   style: TextStyle(
@@ -116,10 +125,8 @@ class _ReportPageState extends State<ReportPage> {
                 ),
                 if (selectedLocation != null)
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'Selected Location: ${selectedLocation!.latitude}, ${selectedLocation!.longitude}',
-                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: getLocationText(selectedLocation!),
                   ),
                 if (_locationError != null)
                   Padding(
@@ -132,10 +139,7 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 12),
                 Text(
                   "Date Found:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 TextFormField(
                   controller: _dateController,
@@ -155,10 +159,7 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 12),
                 Text(
                   "Description:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 SizedBox(height: 10),
                 ConstrainedBox(
@@ -197,16 +198,14 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(height: 8),
                 Text(
                   "Any additional information:",
-                  style: TextStyle(
-                    fontSize: 16, // optional, adjust size
-                  ),
+                  style: TextStyle(fontSize: 16),
                 ),
                 Text(
                   "This could include: \n - Severity of the problem and whether it's getting worse \n - Any safety risks or injuries \n - How much of the area is affected",
                   style: TextStyle(fontStyle: FontStyle.italic),
                 ),
                 TextFormField(
-                  maxLines: null, // grows vertically
+                  maxLines: 10, // grows vertically
                   minLines: 3,
                   keyboardType: TextInputType.multiline,
                   decoration: const InputDecoration(
@@ -220,11 +219,78 @@ class _ReportPageState extends State<ReportPage> {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  "Photos:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18, // optional, adjust size
+                  "Severity Level:",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 2,
+                    vertical: 2,
                   ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: (hasSaveBeenAttempted && selectedSeverity == null)
+                          ? Colors.red
+                          : Colors.transparent,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: List.generate(10, (index) {
+                          final number = index + 1;
+                          final isSelected = selectedSeverity == number;
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                              ),
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  backgroundColor: isSelected
+                                      ? Colors.blue
+                                      : Colors.grey[200],
+                                  foregroundColor: isSelected
+                                      ? Colors.white
+                                      : Colors.black,
+                                  minimumSize: const Size(0, 30),
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedSeverity = number;
+                                  });
+                                },
+                                child: Text(number.toString()),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      Text(
+                        "1:  No immediate action required",
+                        style: TextStyle(fontStyle: FontStyle.italic),
+                        textAlign: TextAlign.left,
+                      ),
+                      Text(
+                        "10:  Severe hazard/emergency",
+                        style: TextStyle(fontStyle: FontStyle.italic),
+                        textAlign: TextAlign.left,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "Photos:",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
                   "This could include: \n - Close up of the problem \n - Distance picture for context",
@@ -430,13 +496,13 @@ class _ReportPageState extends State<ReportPage> {
       return; // stop saving
     }
 
+    final userid = FirebaseAuth.instance.currentUser!.uid;
+
     try {
       List<String> imageUrls = [];
       if (_images.isNotEmpty) {
         imageUrls = await uploadImages(_images);
       }
-
-      final userid = FirebaseAuth.instance.currentUser!.uid;
 
       final locationText = await convertlatlngToLocationText(
         selectedLocation!.latitude,
@@ -447,6 +513,59 @@ class _ReportPageState extends State<ReportPage> {
           .toLowerCase()
           .replaceAll(',', '')
           .split(' ');
+
+      //check for duplicates
+      if (await checkForDuplicateReport(
+        selectedLocation!,
+        shortDescription!,
+        userid,
+        selectedSeverity!,
+        imageUrls,
+      )) {
+        await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text(
+              'Duplicate Report!',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 23),
+              textAlign: TextAlign.center,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "This report has already been logged.",
+                  style: TextStyle(fontStyle: FontStyle.italic, fontSize: 16),
+                ),
+                Text(
+                  "No report has been saved.",
+                  style: TextStyle(fontStyle: FontStyle.italic, fontSize: 16),
+                ),
+                SizedBox(height: 10),
+                LocalCouncilInfo().showLocalCouncilInfo(selectedLocation!),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actions: [
+              TextButton.icon(
+                onPressed: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => HomePage())),
+                icon: const Icon(Icons.home),
+                label: const Text('Home'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => ReportPage())),
+                icon: const Icon(Icons.edit),
+                label: const Text('Make another report'),
+              ),
+            ],
+          ),
+        );
+      }
 
       //save logic
       final report = <String, dynamic>{
@@ -463,9 +582,10 @@ class _ReportPageState extends State<ReportPage> {
         "votes": {},
         "userid": userid,
         "status": ReportStatus.Submitted.toString(),
+        "severity": selectedSeverity.toString(),
       };
 
-      final reportRef = await db.collection("reports").add(report);
+      final reportRef = await HandleReports.saveReport(report);
       debugPrint("report added: ${reportRef.id}");
 
       if (!mounted) return;
@@ -513,6 +633,77 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
+  static Future<bool> checkForDuplicateReport(
+    LatLng currentReportLocation,
+    String description,
+    String userid,
+    int severity,
+    List<String> imageUrls,
+  ) async {
+    //get approximate locations - 1 degree is approximately 111,100m => 1km = 1000/111,100 = 0.009 degrees
+    double latMin = currentReportLocation.latitude - 0.009;
+    double latMax = currentReportLocation.latitude + 0.009;
+    double lngMin =
+        currentReportLocation.longitude -
+        (0.009 / currentReportLocation.latitudeInRad);
+    double lngMax =
+        currentReportLocation.longitude +
+        (0.009 / currentReportLocation.latitudeInRad);
+
+    final reportSnapshots = FirebaseFirestore.instance
+        .collection('reports')
+        .where('latitude', isGreaterThan: latMin)
+        .where('latitude', isLessThan: latMax)
+        .where('longitude', isGreaterThan: lngMin)
+        .where('longitude', isLessThan: lngMax)
+        .snapshots();
+    final snapshots = await reportSnapshots.first;
+    for (var doc in snapshots.docs) {
+      final report = doc.data();
+      if (report['description'] == description &&
+          checkIfWithin100m(
+            currentReportLocation,
+            LatLng(report['latitude'], report['longitude']),
+          )) {
+        //report already exists so update details
+        final reportModel = HandleReports.convertToReportModel(report, doc.id);
+        ReportProvider().voteOnReport(
+          reportModel,
+          Map.from(reportModel.votes),
+          'likes',
+          userid,
+        );
+        final dupReportSeverity = int.tryParse(reportModel.severity) ?? 0;
+        if (severity > dupReportSeverity) {
+          HandleReports.updateSeverity(reportModel, severity.toString());
+        }
+        HandleReports.updatePhotos(reportModel, imageUrls);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static bool checkIfWithin100m(
+    LatLng currentReportLocation,
+    LatLng otherReportLocation,
+  ) {
+    //Haversine formula
+    //also package in geolocator
+    double distanceInMetres = Geolocator.distanceBetween(
+      currentReportLocation.latitude,
+      currentReportLocation.longitude,
+      otherReportLocation.latitude,
+      otherReportLocation.longitude,
+    );
+
+    if (distanceInMetres > 100) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   Future<List<String>> uploadImages(List<XFile> images) async {
     List<String> downloadUrls = [];
 
@@ -536,6 +727,24 @@ class _ReportPageState extends State<ReportPage> {
       downloadUrls.add(imageUrl);
     }
     return downloadUrls;
+  }
+
+  FutureBuilder<String> getLocationText(LatLng location) {
+    return FutureBuilder<String>(
+      future: convertlatlngToLocationText(
+        location.latitude,
+        location.longitude,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Text("Loading location details...");
+        } else if (snapshot.hasError) {
+          return Text("Error");
+        } else {
+          return Text(snapshot.data ?? "");
+        }
+      },
+    );
   }
 
   Future<String> convertlatlngToLocationText(double lat, double lng) async {

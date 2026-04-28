@@ -51,8 +51,8 @@ class MapContainer extends StatefulWidget {
 
 class _MapContainerState extends State<MapContainer> {
   final String? mapApiKey = kIsWeb
-      ? const String.fromEnvironment('MAPTILER_API_KEY2')
-      : dotenv.env['MAPTILER_API_KEY2'];
+      ? const String.fromEnvironment('MAPTILER_API_KEY')
+      : dotenv.env['MAPTILER_API_KEY'];
 
   late final Map<MapStyle, String> mapStyles;
   MapStyle currentStyle = MapStyle.OpenStreetMap;
@@ -69,17 +69,28 @@ class _MapContainerState extends State<MapContainer> {
       {}; //local cache for faster suggestions
   final GlobalKey _suggestionsKey = GlobalKey();
 
+  List<ReportModel> _currentReports = [];
+
   bool showOtherReports = true; //controlled by switch
   final List<Marker> _markers = [];
   List<Marker> _otherReportsmarkers = [];
+  List<Marker> _locationMarker = [];
   StreamSubscription<List<Marker>>? _markerSubscription;
 
   FileCacheStore? _cacheStore;
   bool _mapReady = false;
 
+  final Map<String, ImageProvider> _tileCache = {};
+
   @override
   void initState() {
     super.initState();
+
+    widget.allReports?.listen((reports) {
+      setState(() {
+        _currentReports = reports;
+      });
+    });
 
     if (widget.showReportsToggle) {
       _markerSubscription = _getReportMarkers(context, widget.allReports!)
@@ -92,17 +103,6 @@ class _MapContainerState extends State<MapContainer> {
       showOtherReports = false;
     }
 
-    mapStyles = {
-      MapStyle.Landscape:
-          'https://api.maptiler.com/maps/landscape-v4/{z}/{x}/{y}.png?key=$mapApiKey',
-      MapStyle.OpenStreetMap:
-          'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=$mapApiKey',
-      MapStyle.Satellite:
-          'https://api.maptiler.com/maps/hybrid-v4/{z}/{x}/{y}.jpg?key=$mapApiKey',
-      MapStyle.Streets:
-          'https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=$mapApiKey',
-    };
-
     if (widget.initialLocation != null) {
       _position = widget.initialLocation;
       _markers.add(
@@ -110,7 +110,7 @@ class _MapContainerState extends State<MapContainer> {
           width: 150,
           height: 150,
           point: widget.initialLocation!,
-          child: Icon(Icons.location_on, color: Colors.red, size: 35),
+          child: Icon(Icons.location_on, color: Colors.purple, size: 35),
         ),
       );
       _mapLoading = false;
@@ -119,6 +119,17 @@ class _MapContainerState extends State<MapContainer> {
         await _loadLocation();
       });
     }
+
+    mapStyles = {
+      MapStyle.Landscape:
+          'https://api.maptiler.com/maps/landscape-v4/{z}/{x}/{y}.png?key=$mapApiKey&v=1',
+      MapStyle.OpenStreetMap:
+          'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=$mapApiKey&v=1',
+      MapStyle.Satellite:
+          'https://api.maptiler.com/maps/hybrid-v4/{z}/{x}/{y}.jpg?key=$mapApiKey&v=1',
+      MapStyle.Streets:
+          'https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=$mapApiKey&v=1',
+    };
 
     _initCache();
   }
@@ -148,7 +159,7 @@ class _MapContainerState extends State<MapContainer> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    if ((!kIsWeb && _cacheStore == null) || _mapLoading || _position == null) {
+    if ((!kIsWeb && _cacheStore == null) || _position == null) {
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -170,24 +181,22 @@ class _MapContainerState extends State<MapContainer> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter:
-                      widget.initialLocation ??
-                      _position ??
-                      LatLng(50.7219, -3.5330),
-                  initialZoom: 15,
+                      widget.initialLocation ?? _position ?? LatLng(0, 0),
+                  initialZoom: _usingDefaultLocation ? 1 : 15,
+                  maxZoom: 16,
+                  minZoom: 10,
+                  interactionOptions: widget.isShowingReportDetails
+                      ? const InteractionOptions(
+                          flags: InteractiveFlag.none, // disables movement
+                        )
+                      : const InteractionOptions(), // default (interactive)
+
                   onMapReady: () {
                     _mapReady = true;
-                    // Force redraw once layout is complete
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _mapController.move(
-                        widget.initialLocation ??
-                            _position ??
-                            const LatLng(50.7219, -3.5330),
-                        15,
-                      );
-                    });
                   },
                   onTap: (tapPosition, point) {
-                    if (!widget.isShowingReportDetails) {
+                    if (!showOtherReports && !widget.isShowingReportDetails) {
+                      //making a report
                       setState(() {
                         _markers.clear();
                         _markers.add(
@@ -197,8 +206,84 @@ class _MapContainerState extends State<MapContainer> {
                             point: point,
                             child: Icon(
                               Icons.location_on,
-                              color: Colors.red,
+                              color: Colors.purple,
                               size: 35,
+                            ),
+                          ),
+                        );
+                      });
+                      if (widget.onLocationSelected != null) {
+                        widget.onLocationSelected!(point);
+                      }
+                    }
+                  },
+                  onLongPress: (tapPosition, point) {
+                    if (!showOtherReports && !widget.isShowingReportDetails) {
+                      //making a report
+                      setState(() {
+                        _markers.clear();
+                        _markers.add(
+                          Marker(
+                            width: 150,
+                            height: 150,
+                            point: point,
+                            child: Icon(
+                              Icons.location_on,
+                              color: Colors.purple,
+                              size: 35,
+                            ),
+                          ),
+                        );
+                      });
+                      if (widget.onLocationSelected != null) {
+                        widget.onLocationSelected!(point);
+                      }
+                    } else if (!widget.isShowingReportDetails) {
+                      setState(() {
+                        _markers.clear();
+                        _markers.add(
+                          Marker(
+                            width: 150,
+                            height: 150,
+                            point: point,
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    "Submit \na report?",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    if (widget.onLocationSelected != null) {
+                                      widget.onLocationSelected!(point);
+                                    }
+                                  },
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: Colors.purple,
+                                    size: 35,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -214,7 +299,7 @@ class _MapContainerState extends State<MapContainer> {
                     urlTemplate: mapStyles[currentStyle],
                     userAgentPackageName: 'com.undergrad_proj.roam_and_report',
                     tileProvider: kIsWeb
-                        ? NetworkTileProvider()
+                        ? InMemoryTileProvider(_tileCache)
                         : CachedTileProvider(
                             store: _cacheStore!,
                             maxStale: const Duration(days: 30),
@@ -230,11 +315,12 @@ class _MapContainerState extends State<MapContainer> {
                       ),
                     ],
                   ),
-                  MarkerLayer(markers: _markers),
                   if (showOtherReports)
                     MarkerClusterLayerWidget(
                       options: _buildClusterLayer(_otherReportsmarkers),
                     ),
+                  MarkerLayer(markers: _locationMarker),
+                  MarkerLayer(markers: _markers),
                 ],
               ),
               if (_mapLoading)
@@ -274,7 +360,10 @@ class _MapContainerState extends State<MapContainer> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SizedBox(height: 8),
-                          const Text("Show all reports"),
+                          const Text(
+                            "Show all reports",
+                            style: TextStyle(fontSize: 14),
+                          ),
                           Switch(
                             value: showOtherReports,
                             materialTapTargetSize:
@@ -322,20 +411,23 @@ class _MapContainerState extends State<MapContainer> {
     try {
       resolvedPosition = await LocationService.loadLocation();
     } catch (e) {
-      // GPS denied or failed → fallback to Exeter
-      resolvedPosition = const LatLng(50.7219, -3.5330);
+      // GPS denied or failed → fallback to world map
+      resolvedPosition = const LatLng(0, 0);
     }
 
     if (!mounted) return;
 
+    _position = resolvedPosition;
+    _usingDefaultLocation = resolvedPosition == const LatLng(0.0, 0.0);
+
     setState(() {
-      _position = resolvedPosition;
-      _usingDefaultLocation =
-          resolvedPosition == const LatLng(50.7219, -3.5330);
       _mapLoading = false;
     });
     if (_mapReady) {
       _mapController.move(resolvedPosition, 15);
+    }
+    if (!_usingDefaultLocation) {
+      addLocationMarker(_locationMarker, "You are here", _position!);
     }
   }
 
@@ -382,7 +474,7 @@ class _MapContainerState extends State<MapContainer> {
                   if (box != null) {
                     final pos = box.localToGlobal(
                       Offset.zero,
-                    ); // top-left corner
+                    ); // top left corner
                     final size = box.size;
                     final rect = Rect.fromLTWH(
                       pos.dx,
@@ -438,7 +530,6 @@ class _MapContainerState extends State<MapContainer> {
                 setState(() {
                   _searchSuggestions.clear();
                   _searchController.clear();
-                  _mapLoading = true;
                   context.read<MapUiState>().closeKeyboard();
                 });
                 _moveToLocation(item: item);
@@ -451,7 +542,7 @@ class _MapContainerState extends State<MapContainer> {
   }
 
   Widget _buildGpsWarning() {
-    // display a popup box telling the user GPS location could not be used, and so map has loaded to default location (Exeter)
+    // display a popup box telling the user GPS location could not be used, and so map has loaded to default location (world map)
     return Positioned(
       top: 90,
       left: 20,
@@ -486,53 +577,63 @@ class _MapContainerState extends State<MapContainer> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Choose map style",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.5,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  children: MapStyle.values.map((style) {
-                    final bool isSelected = currentStyle == style;
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.4,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Choose map style",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      crossAxisCount: 2,
+                      childAspectRatio: 1.5,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      children: MapStyle.values.map((style) {
+                        final bool isSelected = currentStyle == style;
 
-                    return ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isSelected
-                            ? Colors.blue
-                            : Colors.grey[500],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: EdgeInsets.all(12),
-                      ),
-                      onPressed: () {
-                        if (currentStyle != style) {
-                          setState(() => currentStyle = style);
-                        }
-                        Navigator.pop(context);
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(_mapStyleIcon(style), size: 32),
-                          SizedBox(height: 8),
-                          Text(style.toString().split('.').last),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
+                        return ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isSelected
+                                ? Colors.blue
+                                : Colors.grey[500],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            padding: EdgeInsets.all(12),
+                          ),
+                          onPressed: () {
+                            if (currentStyle != style) {
+                              setState(() => currentStyle = style);
+                            }
+                            Navigator.pop(context);
+                          },
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(_mapStyleIcon(style), size: 32),
+                              SizedBox(height: 8),
+                              Text(
+                                style.toString().split('.').last,
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -561,10 +662,25 @@ class _MapContainerState extends State<MapContainer> {
       markers: markers,
       showPolygon: false,
       builder: (context, cluster) {
+        final clusterIds = cluster.map((m) {
+          final key = m.key as ValueKey;
+          return key.value;
+        }).toSet();
+
+        // match reports by ID
+        final clusterReports = _currentReports.where((report) {
+          return clusterIds.contains(report.id);
+        }).toList();
+
+        // get max severity
+        final maxSeverity = clusterReports
+            .map((r) => int.tryParse(r.severity) ?? 0)
+            .reduce((a, b) => a > b ? a : b);
+
         return Container(
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.purple,
+            color: getReportColour(maxSeverity.toString()),
             shape: BoxShape.circle,
           ),
           child: Text(
@@ -589,21 +705,74 @@ class _MapContainerState extends State<MapContainer> {
           width: 40,
           height: 40,
           point: LatLng(lat, lng),
+          key: ValueKey(report.id),
           child: GestureDetector(
             onTap: () {
               if (widget.onMarkerTap != null) {
                 widget.onMarkerTap!(report);
               }
             },
-            child: const Icon(
+            child: Icon(
               Icons.location_on,
-              color: Colors.purple,
+              color: getReportColour(report.severity),
               size: 35,
             ),
           ),
         );
       }).toList();
     });
+  }
+
+  Color getReportColour(String severity) {
+    if (severity.length > 2 || int.parse(severity) == 0) {
+      return Colors.purple;
+    }
+
+    List<Color> severityColours = [
+      const Color(0xFF1A9850), // 1 - dark green
+      const Color(0xFF66BD63), // 2 - green
+      const Color(0xFFA6D96A), // 3 - light green
+      const Color(0xFFFFEB3B), // 4 - bright yellow
+      const Color(0xFFFFC107), // 5 - amber
+      const Color(0xFFFFA000), // 6 - strong amber/orange
+      const Color(0xFFFDB863), // 7 - orange
+      const Color(0xFFF46D43), // 8 - deep orange
+      const Color(0xFFD73027), // 9 - red
+      const Color(0xFFA50026), // 10 - dark red
+    ];
+    return severityColours[int.parse(severity) - 1];
+  }
+
+  void addLocationMarker(
+    List<Marker> markers,
+    String locationText,
+    LatLng position,
+  ) {
+    markers.clear();
+    markers.add(
+      Marker(
+        width: 150,
+        height: 150,
+        point: position,
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+              ),
+              child: Text(
+                locationText,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+            Icon(Icons.my_location, color: Colors.blue, size: 35),
+          ],
+        ),
+      ),
+    );
   }
 
   // --------------------- LOGIC ---------------
@@ -618,14 +787,13 @@ class _MapContainerState extends State<MapContainer> {
     FocusScope.of(context).unfocus();
 
     _mapController.move(LatLng(lat, lon), 15);
-    setState(() => _mapLoading = false);
+    addLocationMarker(_markers, "Searched Location", LatLng(lat, lon));
   }
 
   Future<void> searchLocation(String query) async {
     setState(() {
       _searchSuggestions.clear();
       _searchController.clear();
-      _mapLoading = true;
       context.read<MapUiState>().closeKeyboard();
     });
 
@@ -679,5 +847,35 @@ class _MapContainerState extends State<MapContainer> {
         }
       } catch (_) {}
     });
+  }
+}
+
+class InMemoryTileProvider extends TileProvider {
+  final Map<String, ImageProvider> tileCache;
+
+  InMemoryTileProvider(this.tileCache);
+
+  @override
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer layer) {
+    // Build the tile URL from the layer's template
+    final url = layer.urlTemplate
+        ?.replaceAll('{z}', coordinates.z.toString())
+        .replaceAll('{x}', coordinates.x.toString())
+        .replaceAll('{y}', coordinates.y.toString());
+
+    if (url == null) {
+      // fallback in case urlTemplate is null
+      return const AssetImage('assets/empty_tile.png');
+    }
+
+    // Check cache
+    if (tileCache.containsKey(url)) {
+      return tileCache[url]!;
+    }
+
+    // Otherwise load and store
+    final imageProvider = NetworkImage(url);
+    tileCache[url] = imageProvider;
+    return imageProvider;
   }
 }
